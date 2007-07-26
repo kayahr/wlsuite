@@ -1,0 +1,5 @@
+SUBDIRS = \
+	libwasteland \
+	decodepic \
+	encodepic
+	

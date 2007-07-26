@@ -1,0 +1,16 @@
+all:
+	aclocal
+	autoheader
+	libtoolize --force -c
+	automake -a -f -c
+	autoconf
+	
+clean:
+	for d in `find . -name .svn`; \
+	do \
+	  ( \
+	    cd `dirname $$d`; \
+	    rm -rf `svn propget svn:ignore .`; \
+	  ) \
+	done
+	  

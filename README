@@ -1,0 +1,15 @@
+A shared library and a suite of programs for converting wasteland files into
+standard files and vice versa.
+
+Up to now it implements the following functionality:
+
+  Shared library (libwasteland):
+    
+    * Encoding/Decoding data with vertical xor scheme
+    * Reading/Writing pic from/to file and stream
+    * Reading/Writing wlf from/to file and stream
+    
+  Tools:
+  
+    * decodepic (Converts a PIC into a PNG)
+    * encodepic (Converts a PNG into a PIC)
