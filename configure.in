@@ -5,8 +5,8 @@ AC_PROG_CC
 AM_PROG_LIBTOOL
 AC_PROG_INSTALL
 AC_CHECK_EXTRA
-AC_CHECK_LIB(png,png_get_copyright,,echo "ERROR: libpng library not found"; exit 1;)
-AC_CHECK_HEADERS(png.h,,echo "ERROR: png.h not found"; exit 1;)
+AC_CHECK_LIB(gd,gdImageCreate,,echo "ERROR: GD library not found"; exit 1;)
+AC_CHECK_HEADERS(gd.h,,echo "ERROR: gd.h not found"; exit 1;)
 AC_DEFINE(AUTHOR,"Klaus Reimer",Authors name)
 AC_DEFINE(EMAIL,"k@ailis.de",Authors email address)
 AC_DEFINE(COPYRIGHT,"Copyright (C) 2007  Klaus Reimer <k@ailis.de>",Copyright message)

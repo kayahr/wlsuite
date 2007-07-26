@@ -13,17 +13,17 @@
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #define HAVE_DLFCN_H 1
 
+/* Define to 1 if you have the <gd.h> header file. */
+#define HAVE_GD_H 1
+
 /* Define to 1 if you have the <inttypes.h> header file. */
 #define HAVE_INTTYPES_H 1
 
-/* Define to 1 if you have the `png' library (-lpng). */
-#define HAVE_LIBPNG 1
+/* Define to 1 if you have the `gd' library (-lgd). */
+#define HAVE_LIBGD 1
 
 /* Define to 1 if you have the <memory.h> header file. */
 #define HAVE_MEMORY_H 1
-
-/* Define to 1 if you have the <png.h> header file. */
-#define HAVE_PNG_H 1
 
 /* Define to 1 if you have the <stdint.h> header file. */
 #define HAVE_STDINT_H 1
