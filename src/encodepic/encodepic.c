@@ -21,8 +21,8 @@
 
 void display_usage(void) 
 {
-    printf("Usage: encodepic [ options ] input output\n");
-    printf("Converts a PNG file into a wasteland pic file.\n");
+    printf("Usage: encodepic [OPTION]... PNGFILE PICFILE\n");
+    printf("Converts a PNG image file into a PIC image file.\n");
     printf("\nOptions\n");
     printf("  -h, --help          Display help and exit\n");
     printf("  -V, --version       Display version and exit\n");
