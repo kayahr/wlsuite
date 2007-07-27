@@ -36,13 +36,11 @@ void display_usage(void)
 
 void display_version(void) 
 {
-    printf("decodepic %s\n", PACKAGE);
-    printf("Written by %s\n", AUTHOR);
+    printf("decodepic %s\n", VERSION);
     printf("\n%s\n", COPYRIGHT);
-    printf("This is free software; you can redistribute it and/or modify it under\n");
-    printf("the terms of the GNU General Public License as published by the Free\n");
-    printf("Software Foundation; either version 2 of the License, or (at your\n");
-    printf("option) any later version.\n");
+    printf("This is free software; see the source for copying conditions. ");
+    printf("There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS ");
+    printf("FOR A PARTICULAR PURPOSE.\n\nWritten by %s <%s>\n", AUTHOR, EMAIL);
 }
 
 
