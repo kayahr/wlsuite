@@ -95,7 +95,6 @@ void check_options(int argc, char *argv[])
             case 'W':
                 if (!optarg) die("Missing width argument\n");
                 sscanf(optarg, "%i", &width);
-                printf("%i\n", width);
                 break;
                 
             case 'H':
