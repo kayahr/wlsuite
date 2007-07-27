@@ -1,7 +1,7 @@
 /*
  * $Id$
  * Copyright (C) 2007  Klaus Reimer <k@ailis.de>
- * See COPYING file for licensing information
+ * See COPYING file for copying conditions
  */
 
 /**
