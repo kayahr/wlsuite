@@ -14,6 +14,9 @@
 #include <wasteland.h>
 #include "config.h"
 
+int width = 288;
+int height = 128;
+
 
 /**
  * Displays the usage text.
@@ -21,11 +24,13 @@
 
 void display_usage(void) 
 {
-    printf("Usage: decodepic [ options ] input width height output\n");
-    printf("Converts a wasteland pic file into a PNG file.\n");
+    printf("Usage: decodepic [OPTION]... PICFILE PNGFILE\n");
+    printf("Converts a wasteland PIC image file into a PNG image file.\n");
     printf("\nOptions\n");
-    printf("  -h, --help          Display help and exit\n");
-    printf("  -V, --version       Display version and exit\n");
+    printf("  -W, --width=NUMBER   The image width (Default: %i)\n", width);
+    printf("  -H, --height=NUMBER  The image height (Default: %i)\n", height);
+    printf("  -h, --help           Display help and exit\n");
+    printf("  -V, --version        Display version and exit\n");
     printf("\nReport bugs to %s <%s>\n", AUTHOR, EMAIL);
 }
 
@@ -76,25 +81,41 @@ void check_options(int argc, char *argv[])
     char opt;
     int index;
     static struct option options[]={
+        {"width", 1, NULL, 'W'},
+        {"height", 1, NULL, 'H'},
         {"help", 0, NULL, 'h'},
         {"version", 0, NULL, 'V'}
     };
     
     opterr = 0;
-    while((opt = getopt_long(argc, argv, "hV", options, &index)) != -1)
+    while((opt = getopt_long(argc, argv, "W:H:hV", options, &index)) != -1)
     {
         switch(opt) 
         {
+            case 'W':
+                if (!optarg) die("Missing width argument\n");
+                sscanf(optarg, "%i", &width);
+                printf("%i\n", width);
+                break;
+                
+            case 'H':
+                if (!optarg) die("Missing height argument\n");
+                sscanf(optarg, "%i", &height);
+                break;
+                
             case 'V':
                 display_version();
                 exit(1);
                 break;
+                
             case 'h':
                 display_usage();
                 exit(1);
                 break;
+                
             default:
-                die("Unknown option: %s\nUse --help to show valid options.\n", argv[optind - 1]);
+                die("Unknown option: %s\nUse --help to show valid options.\n",
+                        argv[optind - 1]);
         }
     }
 }
@@ -153,7 +174,6 @@ void writePng(char *filename, wlPicPtr pic)
 int main(int argc, char *argv[])
 {  
     char *source, *dest;
-    int width, height;
     wlPicPtr pic;
     
     /* Process options and reset argument pointer */
@@ -162,13 +182,11 @@ int main(int argc, char *argv[])
     argv += optind;
     
     /* Terminate if wrong number of parameters are specified */
-    if (argc != 4) die("Wrong number of parameters.\nUse --help to show syntax.\n");
+    if (argc != 2) die("Wrong number of parameters.\nUse --help to show syntax.\n");
 
     /* Process parameters */
     source = argv[0];
-    width = atoi(argv[1]);
-    height = atoi(argv[2]);
-    dest = argv[3];
+    dest = argv[1];
     
     /* Read the pic file */
     pic = wlPicReadFile(source, width, height);
