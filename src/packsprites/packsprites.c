@@ -1,5 +1,5 @@
 /*
- * $Id$
+ * $Id:packsprites.c 231 2007-07-28 22:25:22Z k $
  * Copyright (C) 2007  Klaus Reimer <k@ailis.de>
  * See COPYING file for copying conditions
  */
@@ -12,6 +12,7 @@
 #include <string.h>
 #include <gd.h>
 #include <errno.h>
+#include <dirent.h>
 #include <wasteland.h>
 #include "config.h"
 
@@ -21,10 +22,6 @@
 #define SEPARATOR '/'
 #endif
 
-int quantity = 10;
-int width = 16;
-int height = 16;
-
 
 /**
  * Displays the usage text.
@@ -32,12 +29,9 @@ int height = 16;
 
 void display_usage(void) 
 {
-    printf("Usage: unpacksprites [OPTION]... SPRITESFILE MASKSFILE OUTPUTDIR\n");
-    printf("Unpacks sprites into PNG images.\n");
+    printf("Usage: packsprites [OPTION]... INPUTDIR SPRITESFILE MASKSFILE\n");
+    printf("Packs PNG files into sprites.\n");
     printf("\nOptions\n");
-    printf("  -q, --quantity=NUMBER   The number of sprites (Default: %i)\n", quantity);
-    printf("  -W, --width=NUMBER      The image width (Default: %i)\n", width);
-    printf("  -H, --height=NUMBER     The image height (Default: %i)\n", height);
     printf("  -h, --help              Display help and exit\n");
     printf("  -V, --version           Display version and exit\n");
     printf("\nReport bugs to %s <%s>\n", AUTHOR, EMAIL);
@@ -50,7 +44,7 @@ void display_usage(void)
 
 void display_version(void) 
 {
-    printf("unpacksprites %s\n", VERSION);
+    printf("packsprites %s\n", VERSION);
     printf("\n%s\n", COPYRIGHT);
     printf("This is free software; see the source for copying conditions. ");
     printf("There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS ");
@@ -90,33 +84,15 @@ void check_options(int argc, char *argv[])
     char opt;
     int index;
     static struct option options[]={
-        {"quantity", 1, NULL, 'q'},
-        {"width", 1, NULL, 'W'},
-        {"height", 1, NULL, 'H'},
         {"help", 0, NULL, 'h'},
         {"version", 0, NULL, 'V'}
     };
     
     opterr = 0;
-    while((opt = getopt_long(argc, argv, "q:W:H:hV", options, &index)) != -1)
+    while((opt = getopt_long(argc, argv, "hV", options, &index)) != -1)
     {
         switch(opt) 
         {
-            case 'q':
-                if (!optarg) die("Missing quantity argument\n");
-                sscanf(optarg, "%i", &quantity);
-                break;
-                
-            case 'W':
-                if (!optarg) die("Missing width argument\n");
-                sscanf(optarg, "%i", &width);
-                break;
-                
-            case 'H':
-                if (!optarg) die("Missing height argument\n");
-                sscanf(optarg, "%i", &height);
-                break;
-                
             case 'V':
                 display_version();
                 exit(1);
@@ -211,6 +187,31 @@ void writePngs(char *outputDir, wlSpritesPtr sprites)
     chdir(oldDir);
 }
 
+wlSpritesPtr readSprites(char *inputDir)
+{
+    char *oldDir;
+    DIR *dir;
+    struct dirent *entry;
+
+    oldDir = getcwd(NULL, 0);
+    if (chdir(inputDir))
+    {
+        die("Unable to change to input directory %s: %s\n", inputDir,
+                strerror(errno));
+        return NULL;
+    }
+    
+    dir = opendir(inputDir);
+    while ((entry = readdir(dir)))
+    {
+        printf("%s\n", entry->d_name);
+    }
+    closedir(dir);
+    
+    chdir(oldDir);
+    return NULL;
+}
+
 
 /**
  * Main method
@@ -224,7 +225,7 @@ void writePngs(char *outputDir, wlSpritesPtr sprites)
 
 int main(int argc, char *argv[])
 {  
-    char *spritesFilename, *masksFilename, *outputDir;
+    char *spritesFilename, *masksFilename, *inputDir;
     wlSpritesPtr sprites;
     
     /* Process options and reset argument pointer */
@@ -236,24 +237,19 @@ int main(int argc, char *argv[])
     if (argc != 3) die("Wrong number of parameters.\nUse --help to show syntax.\n");
 
     /* Process parameters */
-    spritesFilename = argv[0];
-    masksFilename = argv[1];
-    outputDir = argv[2];
+    inputDir = argv[0];
+    spritesFilename = argv[1];
+    masksFilename = argv[2];
     
-    /* Read the pic file */
-    sprites = wlSpritesReadFile(spritesFilename, masksFilename, quantity,
-            width, height);
-    if (!sprites)
-    {
-        die("Unable to read sprites\n");
-    }
-
-    /* Write the PNG files */
-    writePngs(outputDir, sprites);
+    /* Read sprites from PNG files */
+    sprites = readSprites(inputDir);
     
-    /* Free resources */
+    /* Write the sprites */
+    wlSpritesWriteFile(sprites, spritesFilename, masksFilename);
+    
+    /* Free memory */
     wlSpritesDestroy(sprites);
-    
+        
     /* Success */
     return 0;
 }

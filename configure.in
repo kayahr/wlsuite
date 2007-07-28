@@ -18,4 +18,5 @@ AC_OUTPUT(
   src/decodepic/Makefile
   src/encodepic/Makefile
   src/unpacksprites/Makefile
+  src/packsprites/Makefile
 )
