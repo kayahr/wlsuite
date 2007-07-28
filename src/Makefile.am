@@ -1,5 +1,6 @@
 SUBDIRS = \
 	libwasteland \
 	decodepic \
-	encodepic
+	encodepic \
+	unpacksprites 
 	

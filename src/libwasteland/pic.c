@@ -79,7 +79,7 @@ wlPicPtr wlPicClone(wlPicPtr pic)
  * wlPicDestroy().
  *
  * @param filename
- *            The filename of the picpic file to read
+ *            The filename of the pic file to read
  * @param width
  *            The width of the pic
  * @param height

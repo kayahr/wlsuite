@@ -7,7 +7,7 @@
 #ifndef WASTELAND_H
 #define WASTELAND_H
 
-#include <stdio.h>               
+#include <stdio.h>
 
 typedef struct
 {
@@ -17,6 +17,16 @@ typedef struct
 } wlPic;
 
 typedef wlPic* wlPicPtr;
+
+typedef struct
+{
+    int quantity;
+    int spriteWidth;
+    int spriteHeight;
+    unsigned char **pixels;
+} wlSprites;
+
+typedef wlSprites* wlSpritesPtr;
 
 typedef struct
 {
@@ -39,5 +49,13 @@ extern wlPicPtr wlPicReadFile(char *filename, int width, int height);
 extern wlPicPtr wlPicReadStream(FILE *stream, int width, int height);
 extern int      wlPicWriteFile(wlPicPtr pic, char *filename);
 extern int      wlPicWriteStream(wlPicPtr pic, FILE *stream);
+
+extern wlSpritesPtr wlSpritesCreate(int quantity, int width, int height);
+extern void         wlSpritesDestroy(wlSpritesPtr sprites);
+extern wlSpritesPtr wlSpritesClone(wlSpritesPtr sprites);
+extern wlSpritesPtr wlSpritesReadFile(char *spritesFilename, char *masksFilename, 
+                                      int quantity, int width, int height);
+extern wlSpritesPtr wlSpritesReadStream(FILE *spritesStream, FILE *masksStream,
+                                        int quantity, int width, int height);
 
 #endif
