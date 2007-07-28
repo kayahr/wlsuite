@@ -211,65 +211,99 @@ wlSpritesPtr wlSpritesReadStream(FILE *spritesStream, FILE *masksStream,
 
 
 /**
- * Writes a pic to a file. The function returns 1 if write was successfull
+ * Writes sprites to files. The function returns 1 if write was successfull
  * and 0 if write failed.
  *
- * @param pic
- *            The pic to write
- * @param filename
- *            The filename of the file to write the pic to
+ * @param sprites
+ *            The sprites to write
+ * @param spritesFilename
+ *            The filename of the file to write the sprites to
+ * @param masksFilename
+ *            The filename of the file to write the sprite masks to
  * @return 1 on success, 0 on failure
  */
-/*
-int wlPicWriteFile(wlPicPtr pic, char *filename)
+
+int wlSpritesWriteFile(wlSpritesPtr sprites, char *spritesFilename,
+        char *masksFilename)
 {
-    FILE *file;
+    FILE *spritesFile, *masksFile;
     int result;
     
-    file = fopen(filename, "wb");
-    if (!file)
+    spritesFile = fopen(spritesFilename, "wb");
+    if (!spritesFile)
     {
-        wlError("Unable to open '%s' for writing: %s\n", filename,
+        wlError("Unable to open '%s' for writing: %s\n", spritesFilename,
             strerror(errno));
         return 0;
     }
-    result = wlPicWriteStream(pic, file);
-    fclose(file);
+    masksFile = fopen(masksFilename, "wb");
+    if (!masksFile)
+    {
+        fclose(spritesFile);
+        wlError("Unable to open '%s' for writing: %s\n", masksFilename,
+            strerror(errno));
+        return 0;
+    }
+    result = wlSpritesWriteStream(sprites, spritesFile, masksFile);
+    fclose(spritesFile);
+    fclose(masksFile);
     return result;
 }
-*/
+
 
 /**
- * Writes a pic to a stream.  The stream must already be open and pointing
- * to the location where you want to write the pic to. The stream is not 
- * closed by this function so you have to do this yourself. The function 
- * returns 1 if write was successfull and 0 if write failed.
+ * Writes sprites to streams.  The streams must already be open and pointing
+ * to the location where you want to write the sprites and the sprites masks to.
+ * The streams are not closed by this function so you have to do this yourself.
+ * The function returns 1 if write was successfull and 0 if write failed.
  *
- * @param pic
- *            The pic to write
- * @param stream
- *            The stream to write the pic to
+ * @param sprites
+ *            The sprites to write
+ * @param spritesStream
+ *            The stream to write the sprites to
+ * @param masksStream
+ *            The stream to write the sprite masks to
  * @return 1 on success, 0 on failure
  */
-/*
-int wlPicWriteStream(wlPicPtr pic, FILE *stream)
+
+int wlSpritesWriteStream(wlSpritesPtr sprites, FILE *spritesStream,
+        FILE *masksStream)
 {
-    int x, y;
+    int x, y, bit, sprite, b;
     int pixel;
-    wlPicPtr tmp;
     
-    tmp = wlPicClone(pic);
-    wlVXorEncode(tmp->pixels, tmp->width, tmp->height);
-    for (y = 0; y < pic->height; y++)
+    for (sprite = 0; sprite < sprites->quantity; sprite++)
     {
-        for (x = 0; x < pic->width; x += 2)
+        for (bit = 0; bit < 4; bit++)
         {
-            pixel = (tmp->pixels[y * tmp->width + x] << 4)
-                | (tmp->pixels[y * tmp->width + x + 1] & 0x0f);
-            fputc(pixel, stream);
+            for (y = 0; y < sprites->spriteHeight; y++)
+            {
+                for (x = 0; x < sprites->spriteWidth; x += 8)
+                {
+                    b = 0;
+                    for (pixel = 0; pixel < 8; pixel++)
+                    {
+                        b |= ((sprites->pixels[sprite][y * sprites->spriteWidth +
+                            x + pixel] >> bit) & 0x01) << (7 - pixel);
+                    }
+                    fputc(b, spritesStream);
+                    
+                    // Write transparancy information when last bit has been
+                    // written
+                    if (bit == 3)
+                    {
+                        b = 0;
+                        for (pixel = 0; pixel < 8; pixel++)
+                        {
+                            b |= (sprites->pixels[sprite][y *
+                                sprites->spriteWidth + x + pixel] >> 4) <<
+                                (7 - bit);
+                        }
+                        fputc(b, masksStream);
+                    }
+                }
+            }
         }
     }
-    wlPicDestroy(tmp);
     return 1;
 }
-*/
