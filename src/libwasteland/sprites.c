@@ -13,7 +13,7 @@
 
 /**
  * Reads sprites from the specified files and returns it as a an array of
- * pixels. You have to release the allocated memory of this array when you
+ * images. You have to release the allocated memory of this array when you
  * no longer need it. If an error occurs while reading the source files then
  * NULL is returned and you can use errno to find the reason.
  * 
@@ -28,17 +28,21 @@
  * @return The sprites as an array of pixels
  */
 
-wlSprites wlSpritesReadFile(char *spritesFilename, char *masksFilename)
+wlImages wlSpritesReadFile(char *spritesFilename, char *masksFilename)
 {
     FILE *spritesFile, *masksFile;
-    wlSprites sprites;
+    wlImages sprites;
     
     assert(spritesFilename != NULL);
     assert(masksFilename != NULL);
     spritesFile = fopen(spritesFilename, "rb");
     if (!spritesFile) return NULL;
     masksFile = fopen(masksFilename, "rb");
-    if (!masksFile) return NULL;
+    if (!masksFile)
+    {
+        fclose(spritesFile);
+        return NULL;
+    }
     sprites = wlSpritesReadStream(spritesFile, masksFile);
     fclose(spritesFile);
     fclose(masksFile);
@@ -66,18 +70,18 @@ wlSprites wlSpritesReadFile(char *spritesFilename, char *masksFilename)
  * @return The sprites as an array of pixels
  */
 
-wlSprites wlSpritesReadStream(FILE *spritesStream, FILE *masksStream)
+wlImages wlSpritesReadStream(FILE *spritesStream, FILE *masksStream)
 {
-    wlSprites sprites;
+    wlImages sprites;
     int x, y, bit, pixel, sprite;
     int b;
     
     assert(spritesStream != NULL);
     assert(masksStream != NULL);
-    sprites = (wlSprites) malloc(10 * sizeof(wlPixels));
+    sprites = (wlImages) malloc(10 * sizeof(wlImage));
     for (sprite = 0; sprite < 10; sprite++)
     {
-        sprites[sprite] = (wlPixels) malloc(16 * 16 * sizeof(wlPixel));
+        sprites[sprite] = (wlImage) malloc(16 * 16 * sizeof(wlPixel));
         for (bit = 0; bit < 4; bit++)
         {
             for (y = 0; y < 16; y++)
@@ -124,7 +128,7 @@ wlSprites wlSpritesReadStream(FILE *spritesStream, FILE *masksStream)
  * @return 1 on success, 0 on failure
  */
 
-int wlSpritesWriteFile(wlSprites sprites, char *spritesFilename,
+int wlSpritesWriteFile(wlImages sprites, char *spritesFilename,
         char *masksFilename)
 {
     FILE *spritesFile, *masksFile;
@@ -164,7 +168,7 @@ int wlSpritesWriteFile(wlSprites sprites, char *spritesFilename,
  * @return 1 on success, 0 on failure
  */
 
-int wlSpritesWriteStream(wlSprites sprites, FILE *spritesStream,
+int wlSpritesWriteStream(wlImages sprites, FILE *spritesStream,
         FILE *masksStream)
 {
     int x, y, bit, sprite, b;

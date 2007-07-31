@@ -3,5 +3,7 @@ SUBDIRS = \
 	decodepic \
 	encodepic \
 	unpacksprites \
-	packsprites
+	packsprites \
+	unpackcursors \
+	packcursors
 	

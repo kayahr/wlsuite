@@ -123,7 +123,7 @@ static void check_options(int argc, char *argv[])
  *            The sprite number to write
  */
 
-static void writePng(char *filename, wlSprites sprites, int spriteNo)
+static void writePng(char *filename, wlImages sprites, int spriteNo)
 {
     gdImagePtr output;
     int x, y, i;
@@ -168,7 +168,7 @@ static void writePng(char *filename, wlSprites sprites, int spriteNo)
  *            The sprites to write
  */
 
-static void writePngs(char *outputDir, wlSprites sprites)
+static void writePngs(char *outputDir, wlImages sprites)
 {
     int i;
     char *oldDir;
@@ -204,7 +204,7 @@ static void writePngs(char *outputDir, wlSprites sprites)
 int main(int argc, char *argv[])
 {  
     char *spritesFilename, *masksFilename, *outputDir;
-    wlSprites sprites;
+    wlImages sprites;
     
     /* Process options and reset argument pointer */
     check_options(argc, argv);

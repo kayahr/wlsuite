@@ -31,9 +31,9 @@
 
 static void display_usage(void) 
 {
-    printf("Usage: wl_packsprites [OPTION]... INPUTDIR SPRITESFILE MASKSFILE\n");
-    printf("Packs PNG files into sprites.\n");
-    printf("\nThe first 10 PNG files found in INPUTDIR are used "
+    printf("Usage: wl_packcursors [OPTION]... INPUTDIR CURSORSFILE\n");
+    printf("Packs PNG files into cursors.\n");
+    printf("\nThe first 8 PNG files found in INPUTDIR are used "
             "(Alphabetically sorted).\nSize and colors doesn't matter because "
             "the images are automatically converted.\n");
     printf("\nOptions\n");
@@ -49,7 +49,7 @@ static void display_usage(void)
 
 static void display_version(void) 
 {
-    printf("wl_packsprites %s\n", VERSION);
+    printf("wl_packcursors %s\n", VERSION);
     printf("\n%s\n", COPYRIGHT);
     printf("This is free software; see the source for copying conditions. ");
     printf("There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS ");
@@ -117,22 +117,22 @@ static void check_options(int argc, char *argv[])
 
 
 /**
- * Converts image into a wasteland sprite and stores it in the specified
- * sprites container at the specified index.
+ * Converts image into a wasteland cursor and stores it in the specified
+ * cursors container at the specified index.
  * 
- * @param sprites
- *            The sprites container
+ * @param cursors
+ *            The cursors container
  * @param index
- *            The sprite index
+ *            The cursor index
  * @param image
  *            The image
  */
 
-static void storeSprite(wlImages sprites, int index, gdImagePtr image)
+static void storeCursor(wlImages cursors, int index, gdImagePtr image)
 {
     gdImagePtr output;
     int x, y, i;
-    int palette[16], transparency;
+    int palette[16], transparency, color;
     
     /* Create a temporary second image for palette conversion */
     output = gdImageCreate(16, 16);
@@ -153,7 +153,8 @@ static void storeSprite(wlImages sprites, int index, gdImagePtr image)
     {
         for (x = 0; x < 16; x++)
         {
-            sprites[index][y * 16 + x] = gdImageGetPixel(output, x, y);
+            color = gdImageGetPixel(output, x, y);
+            cursors[index][y * 16 + x] = color < 16 ? color : color | 0xf0;
         }
     }
     
@@ -173,23 +174,23 @@ static int sortFilenames(const void *p1, const void *p2)
 
 
 /**
- * Reads all sprites (All PNG files in alphabetical order) from the specified
- * input directory, converts them into wasteland sprites and returns the
- * sprites container.
+ * Reads all cursors (All PNG files in alphabetical order) from the specified
+ * input directory, converts them into wasteland cursors and returns the
+ * cursors container.
  * 
  * @param inputDir
  *            The input directory
- * @return The wasteland sprites container 
+ * @return The wasteland cursors container 
  */
 
-static wlImages readSprites(char *inputDir)
+static wlImages readCursors(char *inputDir)
 {
     char *oldDir;
     DIR *dir;
     struct dirent *entry;
     char **filenames;
     int quantity;
-    wlImages sprites;
+    wlImages cursors;
     int i;
     gdImagePtr image;
     FILE *file;
@@ -217,11 +218,11 @@ static wlImages readSprites(char *inputDir)
     quantity = strListSize(filenames);
     qsort(filenames, quantity, sizeof(char *), sortFilenames);
     
-    // Build the sprite container
-    sprites = (wlImages) malloc(10 * sizeof(wlImage));
-    for (i = 0; i < 10; i++)
+    // Build the cursors container
+    cursors = (wlImages) malloc(8 * sizeof(wlImage));
+    for (i = 0; i < 8; i++)
     {
-        sprites[i] = (wlImage) malloc(16 * 16 * sizeof(wlPixel));
+        cursors[i] = (wlImage) malloc(16 * 16 * sizeof(wlPixel));
         if (i < quantity)
         {
             file = fopen(filenames[i], "rb");
@@ -232,16 +233,16 @@ static wlImages readSprites(char *inputDir)
             }
             image = gdImageCreateFromPng(file);
             fclose(file);
-            storeSprite(sprites, i, image);
+            storeCursor(cursors, i, image);
             gdImageDestroy(image);
         }
     }
     strListFreeWithItems(filenames);
     
-    // Go back to previous directory and then return the sprites
+    // Go back to previous directory and then return the cursors
     chdir(oldDir);
     free(oldDir);
-    return sprites;
+    return cursors;
 }
 
 
@@ -257,8 +258,8 @@ static wlImages readSprites(char *inputDir)
 
 int main(int argc, char *argv[])
 {  
-    char *spritesFilename, *masksFilename, *inputDir;
-    wlImages sprites;
+    char *filename, *inputDir;
+    wlImages cursors;
     
     /* Process options and reset argument pointer */
     check_options(argc, argv);
@@ -266,21 +267,20 @@ int main(int argc, char *argv[])
     argv += optind;
     
     /* Terminate if wrong number of parameters are specified */
-    if (argc != 3) die("Wrong number of parameters.\nUse --help to show syntax.\n");
+    if (argc != 2) die("Wrong number of parameters.\nUse --help to show syntax.\n");
 
     /* Process parameters */
     inputDir = argv[0];
-    spritesFilename = argv[1];
-    masksFilename = argv[2];
+    filename = argv[1];
     
-    /* Read sprites from PNG files */
-    sprites = readSprites(inputDir);
+    /* Read cursors from PNG files */
+    cursors = readCursors(inputDir);
     
-    /* Write the sprites */
-    wlSpritesWriteFile(sprites, spritesFilename, masksFilename);
+    /* Write the cursors */
+    wlCursorsWriteFile(cursors, filename);
     
     /* Free memory */
-    free(sprites);
+    free(cursors);
         
     /* Success */
     return 0;

@@ -112,7 +112,7 @@ static void check_options(int argc, char *argv[])
  *            The wasteland pic
  */
 
-static void writePng(char *filename, wlPixels pixels)
+static void writePng(char *filename, wlImage pixels)
 {
     gdImagePtr output;
     int x, y, i;
@@ -156,7 +156,7 @@ static void writePng(char *filename, wlPixels pixels)
 int main(int argc, char *argv[])
 {  
     char *source, *dest;
-    wlPixels pixels;
+    wlImage pixels;
     
     /* Process options and reset argument pointer */
     check_options(argc, argv);

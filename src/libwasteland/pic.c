@@ -25,10 +25,10 @@
  * @return The pixels
  */
 
-wlPixels wlPicReadFile(char *filename)
+wlImage wlPicReadFile(char *filename)
 {
     FILE *file;
-    wlPixels pixels;
+    wlImage pixels;
     
     assert(filename != NULL);
     file = fopen(filename, "rb");
@@ -54,13 +54,13 @@ wlPixels wlPicReadFile(char *filename)
  * @return The pixels
  */
 
-wlPixels wlPicReadStream(FILE *stream)
+wlImage wlPicReadStream(FILE *stream)
 {
-    wlPixels pixels;
+    wlImage pixels;
     int x, y;
     int b;
     
-    pixels = (wlPixels) malloc(sizeof(wlPixel) * 288 * 128);
+    pixels = (wlImage) malloc(sizeof(wlPixel) * 288 * 128);
     for (y = 0; y < 128; y++)
     {
         for (x = 0; x < 288; x+= 2)
@@ -87,7 +87,7 @@ wlPixels wlPicReadStream(FILE *stream)
  * @return 1 on success, 0 on failure
  */
 
-int wlPicWriteFile(wlPixels pixels, char *filename)
+int wlPicWriteFile(wlImage pixels, char *filename)
 {
     FILE *file;
     int result;
@@ -115,7 +115,7 @@ int wlPicWriteFile(wlPixels pixels, char *filename)
  * @return 1 on success, 0 on failure
  */
 
-int wlPicWriteStream(wlPixels pixels, FILE *stream)
+int wlPicWriteStream(wlImage pixels, FILE *stream)
 {
     int x, y;
     int pixel;

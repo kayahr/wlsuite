@@ -10,9 +10,8 @@
 #include <stdio.h>
 
 typedef unsigned char wlPixel;
-typedef wlPixel * wlPixels;
-
-typedef wlPixels * wlSprites;
+typedef wlPixel * wlImage;
+typedef wlImage * wlImages;
 
 typedef struct
 {
@@ -28,16 +27,21 @@ extern void wlError(char *message, ...);
 extern void wlVXorDecode(unsigned char *data, int width, int height);
 extern void wlVXorEncode(unsigned char *data, int width, int height);
 
-extern wlPixels wlPicReadFile(char *filename);
-extern wlPixels wlPicReadStream(FILE *stream);
-extern int      wlPicWriteFile(wlPixels pixels, char *filename);
-extern int      wlPicWriteStream(wlPixels pixels, FILE *stream);
+extern wlImage wlPicReadFile(char *filename);
+extern wlImage wlPicReadStream(FILE *stream);
+extern int     wlPicWriteFile(wlImage pixels, char *filename);
+extern int     wlPicWriteStream(wlImage pixels, FILE *stream);
 
-extern wlSprites wlSpritesReadFile(char *spritesFilename, char *masksFilename);
-extern wlSprites wlSpritesReadStream(FILE *spritesStream, FILE *masksStream);
-extern int       wlSpritesWriteFile(wlSprites sprites, char *spritesFilename,
-        char *masksFilename);
-extern int       wlSpritesWriteStream(wlSprites sprites, FILE *spritesStream,
-        FILE *masksStream);
+extern wlImages wlSpritesReadFile(char *spritesFilename, char *masksFilename);
+extern wlImages wlSpritesReadStream(FILE *spritesStream, FILE *masksStream);
+extern int      wlSpritesWriteFile(wlImages sprites, char *spritesFilename,
+    char *masksFilename);
+extern int      wlSpritesWriteStream(wlImages sprites, FILE *spritesStream,
+    FILE *masksStream);
+
+extern wlImages wlCursorsReadFile(char *filename);
+extern wlImages wlCursorsReadStream(FILE *stream);
+extern int      wlCursorsWriteFile(wlImages cursors, char *filename);
+extern int      wlCursorsWriteStream(wlImages cursors, FILE *stream);
 
 #endif

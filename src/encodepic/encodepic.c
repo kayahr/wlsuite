@@ -116,7 +116,7 @@ static void writePic(char *filename, gdImagePtr image)
     gdImagePtr output;
     int x, y, i;
     int palette[16];
-    wlPixels pixels;
+    wlImage pixels;
     
     /* Create a temporary second image for palette conversion */
     output = gdImageCreate(288, 128);
@@ -130,7 +130,7 @@ static void writePic(char *filename, gdImagePtr image)
             gdImageSY(image));
     
     /* Create the pic */
-    pixels = (wlPixels) malloc(sizeof(wlPixel) * 288 * 128);
+    pixels = (wlImage) malloc(sizeof(wlPixel) * 288 * 128);
     
     /* Copy pixels from image to pic */
     for (y = 0; y < 128; y++)       
