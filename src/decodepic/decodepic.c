@@ -156,6 +156,7 @@ static void writePng(char *filename, wlPicPtr pic)
         die("Unable to write PNG to %s: %s\n", filename, strerror(errno));
     }
     gdImagePng(output, file);
+    gdImageDestroy(output);
     fclose(file);    
 }
 

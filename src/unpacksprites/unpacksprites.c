@@ -177,6 +177,7 @@ static void writePng(char *filename, wlSpritesPtr sprites, int spriteNo)
         die("Unable to write PNG to %s: %s\n", filename, strerror(errno));
     }
     gdImagePng(output, file);
+    gdImageDestroy(output);
     fclose(file);    
 }
 
@@ -209,6 +210,7 @@ static void writePngs(char *outputDir, wlSpritesPtr sprites)
         writePng(filename, sprites, i); 
     }
     chdir(oldDir);
+    free(oldDir);
 }
 
 
