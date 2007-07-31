@@ -1,6 +1,6 @@
 lib_LTLIBRARIES = libwasteland.la
 libwasteland_la_LIBADD =
-libwasteland_la_LDFLAGS = -release 0.1 -no-undefined
+libwasteland_la_LDFLAGS = -version-info 0:0:0 -no-undefined
 libwasteland_la_SOURCES = common.c vxor.c pic.c sprites.c
 libwastelandincludedir = $(includedir)
 libwastelandinclude_HEADERS = wasteland.h
