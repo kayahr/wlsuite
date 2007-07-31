@@ -4,6 +4,8 @@
  * See COPYING file for copying conditions
  */
 
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <getopt.h>
 #include <stdio.h>
@@ -21,7 +23,7 @@
 #define SEPARATOR '/'
 #endif
 
-static int quantity = 10;
+static int quantity = -1;
 static int width = 16;
 static int height = 16;
 
@@ -35,7 +37,7 @@ static void display_usage(void)
     printf("Usage: unpacksprites [OPTION]... SPRITESFILE MASKSFILE OUTPUTDIR\n");
     printf("Unpacks sprites into PNG images.\n");
     printf("\nOptions\n");
-    printf("  -q, --quantity=NUMBER   The number of sprites (Default: %i)\n", quantity);
+    printf("  -q, --quantity=NUMBER   The number of sprites (Default: Auto)\n");
     printf("  -W, --width=NUMBER      The image width (Default: %i)\n", width);
     printf("  -H, --height=NUMBER     The image height (Default: %i)\n", height);
     printf("  -h, --help              Display help and exit\n");

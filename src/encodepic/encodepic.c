@@ -21,8 +21,10 @@
 
 static void display_usage(void) 
 {
-    printf("Usage: encodepic [OPTION]... PNGFILE PICFILE\n");
+    printf("Usage: wl_encodepic [OPTION]... PNGFILE PICFILE\n");
     printf("Converts a PNG image file into a PIC image file.\n");
+    printf("\nThe PNG file can have any dimension and colors. It is "
+            "automatically converted.\n");               
     printf("\nOptions\n");
     printf("  -h, --help          Display help and exit\n");
     printf("  -V, --version       Display version and exit\n");
@@ -36,7 +38,7 @@ static void display_usage(void)
 
 static void display_version(void) 
 {
-    printf("encodepic %s\n", VERSION);
+    printf("wl_encodepic %s\n", VERSION);
     printf("\n%s\n", COPYRIGHT);
     printf("This is free software; see the source for copying conditions. ");
     printf("There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS ");
@@ -112,40 +114,38 @@ static void check_options(int argc, char *argv[])
 static void writePic(char *filename, gdImagePtr image)
 {
     gdImagePtr output;
-    int x, y, i, width, height;
+    int x, y, i;
     int palette[16];
-    wlPicPtr pic;
+    wlPixels pixels;
     
-    width = gdImageSX(image);
-    height = gdImageSY(image);
-
     /* Create a temporary second image for palette conversion */
-    output = gdImageCreate(width, height);
+    output = gdImageCreate(288, 128);
     for (i = 0; i < 16; i++)
     {
         palette[i] = gdImageColorAllocate(output, wlPalette[i].red,
                 wlPalette[i].green, wlPalette[i].blue);
     }
     for (i = 16; i < 256; i++) gdImageColorAllocate(output, 0, 0, 0);
-    gdImageCopy(output, image, 0, 0, 0, 0, width, height);
+    gdImageCopyResampled(output, image, 0, 0, 0, 0, 288, 128, gdImageSX(image),
+            gdImageSY(image));
     
     /* Create the pic */
-    pic = wlPicCreate(width, height);
+    pixels = (wlPixels) malloc(sizeof(wlPixel) * 288 * 128);
     
     /* Copy pixels from image to pic */
-    for (y = 0; y < height; y++)       
+    for (y = 0; y < 128; y++)       
     {
-        for (x = 0; x < width; x++)
+        for (x = 0; x < 288; x++)
         {
-            pic->pixels[y * width + x] = gdImageGetPixel(output, x, y);
+            pixels[y * 288 + x] = gdImageGetPixel(output, x, y);
         }
     }
     
     /* Write the pic file */
-    wlPicWriteFile(pic, filename);
+    wlPicWriteFile(pixels, filename);
 
     /* Free resources */
-    wlPicDestroy(pic);
+    free(pixels);
     gdImageDestroy(output);
 }
 

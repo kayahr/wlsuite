@@ -14,9 +14,6 @@
 #include <wasteland.h>
 #include "config.h"
 
-static int width = 288;
-static int height = 128;
-
 
 /**
  * Displays the usage text.
@@ -24,11 +21,9 @@ static int height = 128;
 
 static void display_usage(void) 
 {
-    printf("Usage: decodepic [OPTION]... PICFILE PNGFILE\n");
+    printf("Usage: wl_decodepic [OPTION]... PICFILE PNGFILE\n");
     printf("Converts a wasteland PIC image file into a PNG image file.\n");
     printf("\nOptions\n");
-    printf("  -W, --width=NUMBER   The image width (Default: %i)\n", width);
-    printf("  -H, --height=NUMBER  The image height (Default: %i)\n", height);
     printf("  -h, --help           Display help and exit\n");
     printf("  -V, --version        Display version and exit\n");
     printf("\nReport bugs to %s <%s>\n", AUTHOR, EMAIL);
@@ -41,7 +36,7 @@ static void display_usage(void)
 
 static void display_version(void) 
 {
-    printf("decodepic %s\n", VERSION);
+    printf("wl_decodepic %s\n", VERSION);
     printf("\n%s\n", COPYRIGHT);
     printf("This is free software; see the source for copying conditions. ");
     printf("There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS ");
@@ -81,27 +76,15 @@ static void check_options(int argc, char *argv[])
     char opt;
     int index;
     static struct option options[]={
-        {"width", 1, NULL, 'W'},
-        {"height", 1, NULL, 'H'},
         {"help", 0, NULL, 'h'},
         {"version", 0, NULL, 'V'}
     };
     
     opterr = 0;
-    while((opt = getopt_long(argc, argv, "W:H:hV", options, &index)) != -1)
+    while((opt = getopt_long(argc, argv, "hV", options, &index)) != -1)
     {
         switch(opt) 
-        {
-            case 'W':
-                if (!optarg) die("Missing width argument\n");
-                sscanf(optarg, "%i", &width);
-                break;
-                
-            case 'H':
-                if (!optarg) die("Missing height argument\n");
-                sscanf(optarg, "%i", &height);
-                break;
-                
+        {                
             case 'V':
                 display_version();
                 exit(1);
@@ -129,25 +112,24 @@ static void check_options(int argc, char *argv[])
  *            The wasteland pic
  */
 
-static void writePng(char *filename, wlPicPtr pic)
+static void writePng(char *filename, wlPixels pixels)
 {
     gdImagePtr output;
     int x, y, i;
     int palette[16];
     FILE *file;
 
-    output = gdImageCreate(pic->width, pic->height);
+    output = gdImageCreate(288, 128);
     for (i = 0; i < 16; i++)
     {
         palette[i] = gdImageColorAllocate(output, wlPalette[i].red,
                 wlPalette[i].green, wlPalette[i].blue);
     }
-    for (y = 0; y < pic->height; y++)       
+    for (y = 0; y < 128; y++)       
     {
-        for (x = 0; x < pic->width; x++)
+        for (x = 0; x < 288; x++)
         {
-            gdImageSetPixel(output, x, y,
-                    palette[pic->pixels[y * pic->width + x]]);
+            gdImageSetPixel(output, x, y, palette[pixels[y * 288 + x]]);
         }
     }    
     file = fopen(filename, "wb");
@@ -174,7 +156,7 @@ static void writePng(char *filename, wlPicPtr pic)
 int main(int argc, char *argv[])
 {  
     char *source, *dest;
-    wlPicPtr pic;
+    wlPixels pixels;
     
     /* Process options and reset argument pointer */
     check_options(argc, argv);
@@ -189,17 +171,17 @@ int main(int argc, char *argv[])
     dest = argv[1];
     
     /* Read the pic file */
-    pic = wlPicReadFile(source, width, height);
-    if (!pic)
+    pixels = wlPicReadFile(source);
+    if (!pixels)
     {
-        die("Unable to read PIC file\n");
+        die("Unable to read PIC file %s: %s\n", source, strerror(errno));
     }
 
     /* Write the PNG file */
-    writePng(dest, pic);
+    writePng(dest, pixels);
     
     /* Free resources */
-    wlPicDestroy(pic);
+    free(pixels);
     
     /* Success */
     return 0;
