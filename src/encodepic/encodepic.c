@@ -19,7 +19,7 @@
  * Displays the usage text.
  */
 
-void display_usage(void) 
+static void display_usage(void) 
 {
     printf("Usage: encodepic [OPTION]... PNGFILE PICFILE\n");
     printf("Converts a PNG image file into a PIC image file.\n");
@@ -34,7 +34,7 @@ void display_usage(void)
  * Displays the version information.
  */
 
-void display_version(void) 
+static void display_version(void) 
 {
     printf("encodepic %s\n", VERSION);
     printf("\n%s\n", COPYRIGHT);
@@ -51,7 +51,7 @@ void display_version(void)
  *            The error message
  */
 
-void die(char *message, ...)
+static void die(char *message, ...)
 {
     va_list args;
     
@@ -71,7 +71,7 @@ void die(char *message, ...)
  *            The argument array
  */
 
-void check_options(int argc, char *argv[])
+static void check_options(int argc, char *argv[])
 {
     char opt;
     int index;
@@ -109,7 +109,7 @@ void check_options(int argc, char *argv[])
  *            The wasteland pic
  */
 
-void writePic(char *filename, gdImagePtr image)
+static void writePic(char *filename, gdImagePtr image)
 {
     gdImagePtr output;
     int x, y, i, width, height;

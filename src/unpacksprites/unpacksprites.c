@@ -21,16 +21,16 @@
 #define SEPARATOR '/'
 #endif
 
-int quantity = 10;
-int width = 16;
-int height = 16;
+static int quantity = 10;
+static int width = 16;
+static int height = 16;
 
 
 /**
  * Displays the usage text.
  */
 
-void display_usage(void) 
+static void display_usage(void) 
 {
     printf("Usage: unpacksprites [OPTION]... SPRITESFILE MASKSFILE OUTPUTDIR\n");
     printf("Unpacks sprites into PNG images.\n");
@@ -48,7 +48,7 @@ void display_usage(void)
  * Displays the version information.
  */
 
-void display_version(void) 
+static void display_version(void) 
 {
     printf("unpacksprites %s\n", VERSION);
     printf("\n%s\n", COPYRIGHT);
@@ -65,7 +65,7 @@ void display_version(void)
  *            The error message
  */
 
-void die(char *message, ...)
+static void die(char *message, ...)
 {
     va_list args;
     
@@ -85,7 +85,7 @@ void die(char *message, ...)
  *            The argument array
  */
 
-void check_options(int argc, char *argv[])
+static void check_options(int argc, char *argv[])
 {
     char opt;
     int index;
@@ -146,7 +146,7 @@ void check_options(int argc, char *argv[])
  *            The sprite number to write
  */
 
-void writePng(char *filename, wlSpritesPtr sprites, int spriteNo)
+static void writePng(char *filename, wlSpritesPtr sprites, int spriteNo)
 {
     gdImagePtr output;
     int x, y, i;
@@ -190,7 +190,7 @@ void writePng(char *filename, wlSpritesPtr sprites, int spriteNo)
  *            The sprites to write
  */
 
-void writePngs(char *outputDir, wlSpritesPtr sprites)
+static void writePngs(char *outputDir, wlSpritesPtr sprites)
 {
     int i;
     char *oldDir;

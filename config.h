@@ -22,6 +22,9 @@
 /* Define to 1 if you have the `gd' library (-lgd). */
 #define HAVE_LIBGD 1
 
+/* Define to 1 if you have the `strutils' library (-lstrutils). */
+#define HAVE_LIBSTRUTILS 1
+
 /* Define to 1 if you have the <memory.h> header file. */
 #define HAVE_MEMORY_H 1
 
@@ -36,6 +39,12 @@
 
 /* Define to 1 if you have the <string.h> header file. */
 #define HAVE_STRING_H 1
+
+/* Define to 1 if you have the <strutils/strlist.h> header file. */
+#define HAVE_STRUTILS_STRLIST_H 1
+
+/* Define to 1 if you have the <strutils/str.h> header file. */
+#define HAVE_STRUTILS_STR_H 1
 
 /* Define to 1 if you have the <sys/stat.h> header file. */
 #define HAVE_SYS_STAT_H 1

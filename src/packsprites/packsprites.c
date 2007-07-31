@@ -14,6 +14,8 @@
 #include <errno.h>
 #include <dirent.h>
 #include <wasteland.h>
+#include <strutils/str.h>
+#include <strutils/strlist.h>
 #include "config.h"
 
 #ifdef WIN32
@@ -27,7 +29,7 @@
  * Displays the usage text.
  */
 
-void display_usage(void) 
+static void display_usage(void) 
 {
     printf("Usage: packsprites [OPTION]... INPUTDIR SPRITESFILE MASKSFILE\n");
     printf("Packs PNG files into sprites.\n");
@@ -42,7 +44,7 @@ void display_usage(void)
  * Displays the version information.
  */
 
-void display_version(void) 
+static void display_version(void) 
 {
     printf("packsprites %s\n", VERSION);
     printf("\n%s\n", COPYRIGHT);
@@ -59,7 +61,7 @@ void display_version(void)
  *            The error message
  */
 
-void die(char *message, ...)
+static void die(char *message, ...)
 {
     va_list args;
     
@@ -79,7 +81,7 @@ void die(char *message, ...)
  *            The argument array
  */
 
-void check_options(int argc, char *argv[])
+static void check_options(int argc, char *argv[])
 {
     char opt;
     int index;
@@ -112,87 +114,91 @@ void check_options(int argc, char *argv[])
 
 
 /**
- * Writes a single sprite into the specified file in PNG format.
+ * Converts image into a wasteland sprite and stores it in the specified
+ * sprites container at the specified index.
  * 
- * @param filename
- *            The output filename
  * @param sprites
- *            The sprites
- * @param spriteNo
- *            The sprite number to write
+ *            The sprites container
+ * @param index
+ *            The sprite index
+ * @param image
+ *            The image
  */
 
-void writePng(char *filename, wlSpritesPtr sprites, int spriteNo)
+static void storeSprite(wlSpritesPtr sprites, int index, gdImagePtr image)
 {
     gdImagePtr output;
-    int x, y, i;
-    int palette[17];
-    int transparent;
-    int color;
-    FILE *file;
+    int x, y, i, width, height;
+    int palette[16], transparency;
+    
+    width = sprites->spriteWidth;
+    height = sprites->spriteHeight;
 
-    output = gdImageCreate(sprites->spriteWidth, sprites->spriteHeight);
+    /* Create a temporary second image for palette conversion */
+    output = gdImageCreate(width, height);
     for (i = 0; i < 16; i++)
     {
         palette[i] = gdImageColorAllocate(output, wlPalette[i].red,
                 wlPalette[i].green, wlPalette[i].blue);
     }
-    transparent = gdImageColorAllocate(output, 0, 0, 0);
-    gdImageColorTransparent(output, transparent);
-    for (y = 0; y < sprites->spriteHeight; y++)       
+    transparency = gdImageColorAllocate(output, 45, 100, 160);
+    gdImageColorTransparent(output, transparency);
+     for (i = 17; i < 256; i++) gdImageColorAllocate(output, 0, 0, 0);
+    gdImageFilledRectangle(output, 0, 0, width, height, transparency);
+    gdImageCopy(output, image, 0, 0, 0, 0, width, height);
+    
+    FILE* tmp = fopen("/tmp/test.png", "wb");
+    gdImagePng(output, tmp);
+    fclose(tmp);
+    
+    /* Copy pixels from image to pic */
+    for (y = 0; y < height; y++)       
     {
-        for (x = 0; x < sprites->spriteWidth; x++)
+        for (x = 0; x < width; x++)
         {
-            color = sprites->pixels[spriteNo][y * sprites->spriteWidth + x];
-            gdImageSetPixel(output, x, y, color < 16 ? palette[color] : transparent);
+            sprites->pixels[index][y * width + x] =
+                gdImageGetPixel(output, x, y);
         }
-    }    
-    file = fopen(filename, "wb");
-    if (!file)
-    {
-        die("Unable to write PNG to %s: %s\n", filename, strerror(errno));
     }
-    gdImagePng(output, file);
-    fclose(file);    
+    
+    /* Free resources */
+    gdImageDestroy(output);
 }
 
 
 /**
- * Writes all the sprites into the specified output directory.
- * 
- * @param outputDir
- *            The output directory
- * @param sprites
- *            The sprites to write
+ * Used by qsort for sorting filenames.
  */
-
-void writePngs(char *outputDir, wlSpritesPtr sprites)
+ 
+static int sortFilenames(const void *p1, const void *p2)
 {
-    int i;
-    char *oldDir;
-    char filename[6];
-    
-    oldDir = getcwd(NULL, 0);
-    if (chdir(outputDir))
-    {
-        die("Unable to change to output directory %s: %s\n", outputDir,
-                strerror(errno));
-        return;
-    }
-    for (i = 0; i < sprites->quantity; i++)
-    {
-        sprintf(filename, "%i.png", i);
-        writePng(filename, sprites, i); 
-    }
-    chdir(oldDir);
+    return strcmp(* (char * const *) p1, * (char * const *) p2);
 }
 
-wlSpritesPtr readSprites(char *inputDir)
+
+/**
+ * Reads all sprites (All PNG files in alphabetical order) from the specified
+ * input directory, converts them into wasteland sprites and returns the
+ * sprites container.
+ * 
+ * @param inputDir
+ *            The input directory
+ * @return The wasteland sprites container 
+ */
+
+static wlSpritesPtr readSprites(char *inputDir)
 {
     char *oldDir;
     DIR *dir;
     struct dirent *entry;
+    char **filenames;
+    int quantity, width = 0, height = 0;
+    wlSpritesPtr sprites = NULL;
+    int i;
+    gdImagePtr image;
+    FILE *file;
 
+    // Change to input directory but remember current directory
     oldDir = getcwd(NULL, 0);
     if (chdir(inputDir))
     {
@@ -201,15 +207,52 @@ wlSpritesPtr readSprites(char *inputDir)
         return NULL;
     }
     
+    // Build list of PNG files found in directory
+    filenames = strListCreate();
     dir = opendir(inputDir);
     while ((entry = readdir(dir)))
     {
-        printf("%s\n", entry->d_name);
+        if (strEndsWithIgnoreCase(entry->d_name, ".png"))
+        {
+            strListAdd(&filenames, strdup(entry->d_name));
+        }
     }
     closedir(dir);
+    quantity = strListSize(filenames);
+    qsort(filenames, quantity, sizeof(char *), sortFilenames);    
+
+    // Build the sprite container
+    for (i = 0; i < quantity; i++)
+    {
+        file = fopen(filenames[i], "rb");
+        if (!file)
+        {
+            die("Unable to read PNG to %s: %s\n", filenames[i], strerror(errno));
+        }
+        image = gdImageCreateFromPng(file);
+        fclose(file);
+        if (i == 0)
+        {
+            width = gdImageSX(image);
+            height = gdImageSY(image);
+            sprites = wlSpritesCreate(quantity, width, height);            
+        }
+        else
+        {
+            if (gdImageSX(image) != width || gdImageSY(image) != height)
+            {
+                die("Sprites with different sizes are not supported.\n");
+            }
+        }
+        storeSprite(sprites, i, image);
+        gdImageDestroy(image);        
+    }
+    strListFreeWithItems(filenames);
     
+    // Go back to previous directory and then return the sprites
     chdir(oldDir);
-    return NULL;
+    free(oldDir);
+    return sprites;
 }
 
 

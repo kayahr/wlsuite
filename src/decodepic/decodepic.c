@@ -14,15 +14,15 @@
 #include <wasteland.h>
 #include "config.h"
 
-int width = 288;
-int height = 128;
+static int width = 288;
+static int height = 128;
 
 
 /**
  * Displays the usage text.
  */
 
-void display_usage(void) 
+static void display_usage(void) 
 {
     printf("Usage: decodepic [OPTION]... PICFILE PNGFILE\n");
     printf("Converts a wasteland PIC image file into a PNG image file.\n");
@@ -39,7 +39,7 @@ void display_usage(void)
  * Displays the version information.
  */
 
-void display_version(void) 
+static void display_version(void) 
 {
     printf("decodepic %s\n", VERSION);
     printf("\n%s\n", COPYRIGHT);
@@ -56,7 +56,7 @@ void display_version(void)
  *            The error message
  */
 
-void die(char *message, ...)
+static void die(char *message, ...)
 {
     va_list args;
     
@@ -76,7 +76,7 @@ void die(char *message, ...)
  *            The argument array
  */
 
-void check_options(int argc, char *argv[])
+static void check_options(int argc, char *argv[])
 {
     char opt;
     int index;
@@ -129,7 +129,7 @@ void check_options(int argc, char *argv[])
  *            The wasteland pic
  */
 
-void writePng(char *filename, wlPicPtr pic)
+static void writePng(char *filename, wlPicPtr pic)
 {
     gdImagePtr output;
     int x, y, i;

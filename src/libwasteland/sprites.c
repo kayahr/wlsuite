@@ -297,7 +297,7 @@ int wlSpritesWriteStream(wlSpritesPtr sprites, FILE *spritesStream,
                         {
                             b |= (sprites->pixels[sprite][y *
                                 sprites->spriteWidth + x + pixel] >> 4) <<
-                                (7 - bit);
+                                (7 - pixel);
                         }
                         fputc(b, masksStream);
                     }
