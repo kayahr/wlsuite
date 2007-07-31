@@ -119,13 +119,12 @@ int wlPicWriteStream(wlPixels pixels, FILE *stream)
 {
     int x, y;
     int pixel;
-    wlPixels encodedPixels;
+    wlPixel encodedPixels[288 * 128];
     
     assert(pixels != NULL);
     assert(stream != NULL);
     
     /* Encode the pixels */
-    encodedPixels = (wlPixels) malloc(sizeof(wlPixel) * 288 * 128);
     memcpy(encodedPixels, pixels, sizeof(wlPixel) * 288 * 128);
     wlVXorEncode(encodedPixels, 288, 128);
     
@@ -141,6 +140,5 @@ int wlPicWriteStream(wlPixels pixels, FILE *stream)
     }
     
     /* Release encoded pixels and report success */
-    free(encodedPixels);
     return 1;
 }

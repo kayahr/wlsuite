@@ -23,10 +23,6 @@
 #define SEPARATOR '/'
 #endif
 
-static int quantity = -1;
-static int width = 16;
-static int height = 16;
-
 
 /**
  * Displays the usage text.
@@ -34,12 +30,9 @@ static int height = 16;
 
 static void display_usage(void) 
 {
-    printf("Usage: unpacksprites [OPTION]... SPRITESFILE MASKSFILE OUTPUTDIR\n");
+    printf("Usage: wl_unpacksprites [OPTION]... SPRITESFILE MASKSFILE OUTPUTDIR\n");
     printf("Unpacks sprites into PNG images.\n");
     printf("\nOptions\n");
-    printf("  -q, --quantity=NUMBER   The number of sprites (Default: Auto)\n");
-    printf("  -W, --width=NUMBER      The image width (Default: %i)\n", width);
-    printf("  -H, --height=NUMBER     The image height (Default: %i)\n", height);
     printf("  -h, --help              Display help and exit\n");
     printf("  -V, --version           Display version and exit\n");
     printf("\nReport bugs to %s <%s>\n", AUTHOR, EMAIL);
@@ -52,7 +45,7 @@ static void display_usage(void)
 
 static void display_version(void) 
 {
-    printf("unpacksprites %s\n", VERSION);
+    printf("wl_unpacksprites %s\n", VERSION);
     printf("\n%s\n", COPYRIGHT);
     printf("This is free software; see the source for copying conditions. ");
     printf("There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS ");
@@ -92,33 +85,15 @@ static void check_options(int argc, char *argv[])
     char opt;
     int index;
     static struct option options[]={
-        {"quantity", 1, NULL, 'q'},
-        {"width", 1, NULL, 'W'},
-        {"height", 1, NULL, 'H'},
         {"help", 0, NULL, 'h'},
         {"version", 0, NULL, 'V'}
     };
     
     opterr = 0;
-    while((opt = getopt_long(argc, argv, "q:W:H:hV", options, &index)) != -1)
+    while((opt = getopt_long(argc, argv, "hV", options, &index)) != -1)
     {
         switch(opt) 
         {
-            case 'q':
-                if (!optarg) die("Missing quantity argument\n");
-                sscanf(optarg, "%i", &quantity);
-                break;
-                
-            case 'W':
-                if (!optarg) die("Missing width argument\n");
-                sscanf(optarg, "%i", &width);
-                break;
-                
-            case 'H':
-                if (!optarg) die("Missing height argument\n");
-                sscanf(optarg, "%i", &height);
-                break;
-                
             case 'V':
                 display_version();
                 exit(1);
@@ -148,7 +123,7 @@ static void check_options(int argc, char *argv[])
  *            The sprite number to write
  */
 
-static void writePng(char *filename, wlSpritesPtr sprites, int spriteNo)
+static void writePng(char *filename, wlSprites sprites, int spriteNo)
 {
     gdImagePtr output;
     int x, y, i;
@@ -157,7 +132,7 @@ static void writePng(char *filename, wlSpritesPtr sprites, int spriteNo)
     int color;
     FILE *file;
 
-    output = gdImageCreate(sprites->spriteWidth, sprites->spriteHeight);
+    output = gdImageCreate(16, 16);
     for (i = 0; i < 16; i++)
     {
         palette[i] = gdImageColorAllocate(output, wlPalette[i].red,
@@ -165,11 +140,11 @@ static void writePng(char *filename, wlSpritesPtr sprites, int spriteNo)
     }
     transparent = gdImageColorAllocate(output, 0, 0, 0);
     gdImageColorTransparent(output, transparent);
-    for (y = 0; y < sprites->spriteHeight; y++)       
+    for (y = 0; y < 16; y++)       
     {
-        for (x = 0; x < sprites->spriteWidth; x++)
+        for (x = 0; x < 16; x++)
         {
-            color = sprites->pixels[spriteNo][y * sprites->spriteWidth + x];
+            color = sprites[spriteNo][y * 16 + x];
             gdImageSetPixel(output, x, y, color < 16 ? palette[color] : transparent);
         }
     }    
@@ -193,7 +168,7 @@ static void writePng(char *filename, wlSpritesPtr sprites, int spriteNo)
  *            The sprites to write
  */
 
-static void writePngs(char *outputDir, wlSpritesPtr sprites)
+static void writePngs(char *outputDir, wlSprites sprites)
 {
     int i;
     char *oldDir;
@@ -206,7 +181,7 @@ static void writePngs(char *outputDir, wlSpritesPtr sprites)
                 strerror(errno));
         return;
     }
-    for (i = 0; i < sprites->quantity; i++)
+    for (i = 0; i < 10; i++)
     {
         sprintf(filename, "%i.png", i);
         writePng(filename, sprites, i); 
@@ -229,7 +204,7 @@ static void writePngs(char *outputDir, wlSpritesPtr sprites)
 int main(int argc, char *argv[])
 {  
     char *spritesFilename, *masksFilename, *outputDir;
-    wlSpritesPtr sprites;
+    wlSprites sprites;
     
     /* Process options and reset argument pointer */
     check_options(argc, argv);
@@ -245,18 +220,18 @@ int main(int argc, char *argv[])
     outputDir = argv[2];
     
     /* Read the pic file */
-    sprites = wlSpritesReadFile(spritesFilename, masksFilename, quantity,
-            width, height);
+    sprites = wlSpritesReadFile(spritesFilename, masksFilename);
     if (!sprites)
     {
-        die("Unable to read sprites\n");
+        die("Unable to read sprites from %s and %s: %s\n", spritesFilename,
+                masksFilename, strerror(errno));
     }
 
     /* Write the PNG files */
     writePngs(outputDir, sprites);
     
     /* Free resources */
-    wlSpritesDestroy(sprites);
+    free(sprites);
     
     /* Success */
     return 0;

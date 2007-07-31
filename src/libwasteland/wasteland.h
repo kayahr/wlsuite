@@ -10,18 +10,9 @@
 #include <stdio.h>
 
 typedef unsigned char wlPixel;
-
 typedef wlPixel * wlPixels;
 
-typedef struct
-{
-    int quantity;
-    int spriteWidth;
-    int spriteHeight;
-    unsigned char **pixels;
-} wlSprites;
-
-typedef wlSprites* wlSpritesPtr;
+typedef wlPixels * wlSprites;
 
 typedef struct
 {
@@ -42,16 +33,11 @@ extern wlPixels wlPicReadStream(FILE *stream);
 extern int      wlPicWriteFile(wlPixels pixels, char *filename);
 extern int      wlPicWriteStream(wlPixels pixels, FILE *stream);
 
-extern wlSpritesPtr wlSpritesCreate(int quantity, int width, int height);
-extern void         wlSpritesDestroy(wlSpritesPtr sprites);
-extern wlSpritesPtr wlSpritesClone(wlSpritesPtr sprites);
-extern wlSpritesPtr wlSpritesReadFile(char *spritesFilename, char *masksFilename, 
-        int quantity, int width, int height);
-extern wlSpritesPtr wlSpritesReadStream(FILE *spritesStream, FILE *masksStream,
-        int quantity, int width, int height);
-extern int wlSpritesWriteFile(wlSpritesPtr sprites, char *spritesFilename,
+extern wlSprites wlSpritesReadFile(char *spritesFilename, char *masksFilename);
+extern wlSprites wlSpritesReadStream(FILE *spritesStream, FILE *masksStream);
+extern int       wlSpritesWriteFile(wlSprites sprites, char *spritesFilename,
         char *masksFilename);
-extern int          wlSpritesWriteStream(wlSpritesPtr sprites,
-        FILE *spritesStream, FILE *masksStream);
+extern int       wlSpritesWriteStream(wlSprites sprites, FILE *spritesStream,
+        FILE *masksStream);
 
 #endif

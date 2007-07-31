@@ -31,8 +31,11 @@
 
 static void display_usage(void) 
 {
-    printf("Usage: packsprites [OPTION]... INPUTDIR SPRITESFILE MASKSFILE\n");
+    printf("Usage: wl_packsprites [OPTION]... INPUTDIR SPRITESFILE MASKSFILE\n");
     printf("Packs PNG files into sprites.\n");
+    printf("\nThe first 10 PNG files found in INPUTDIR are used "
+            "(Alphabetically sorted).\nSize and colors doesn't matter because "
+            "the images are automatically converted.\n");
     printf("\nOptions\n");
     printf("  -h, --help              Display help and exit\n");
     printf("  -V, --version           Display version and exit\n");
@@ -46,7 +49,7 @@ static void display_usage(void)
 
 static void display_version(void) 
 {
-    printf("packsprites %s\n", VERSION);
+    printf("wl_packsprites %s\n", VERSION);
     printf("\n%s\n", COPYRIGHT);
     printf("This is free software; see the source for copying conditions. ");
     printf("There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS ");
@@ -125,39 +128,32 @@ static void check_options(int argc, char *argv[])
  *            The image
  */
 
-static void storeSprite(wlSpritesPtr sprites, int index, gdImagePtr image)
+static void storeSprite(wlSprites sprites, int index, gdImagePtr image)
 {
     gdImagePtr output;
-    int x, y, i, width, height;
+    int x, y, i;
     int palette[16], transparency;
     
-    width = sprites->spriteWidth;
-    height = sprites->spriteHeight;
-
     /* Create a temporary second image for palette conversion */
-    output = gdImageCreate(width, height);
+    output = gdImageCreate(16, 16);
     for (i = 0; i < 16; i++)
     {
         palette[i] = gdImageColorAllocate(output, wlPalette[i].red,
                 wlPalette[i].green, wlPalette[i].blue);
     }
-    transparency = gdImageColorAllocate(output, 45, 100, 160);
+    transparency = gdImageColorAllocate(output, 0, 0, 0);
     gdImageColorTransparent(output, transparency);
-     for (i = 17; i < 256; i++) gdImageColorAllocate(output, 0, 0, 0);
-    gdImageFilledRectangle(output, 0, 0, width, height, transparency);
-    gdImageCopy(output, image, 0, 0, 0, 0, width, height);
-    
-    FILE* tmp = fopen("/tmp/test.png", "wb");
-    gdImagePng(output, tmp);
-    fclose(tmp);
+    for (i = 17; i < 256; i++) gdImageColorAllocate(output, 0, 0, 0);
+    gdImageFilledRectangle(output, 0, 0, 16, 16, transparency);
+    gdImageCopyResampled(output, image, 0, 0, 0, 0, 16, 16, gdImageSX(image),
+            gdImageSY(image));
     
     /* Copy pixels from image to pic */
-    for (y = 0; y < height; y++)       
+    for (y = 0; y < 16; y++)       
     {
-        for (x = 0; x < width; x++)
+        for (x = 0; x < 16; x++)
         {
-            sprites->pixels[index][y * width + x] =
-                gdImageGetPixel(output, x, y);
+            sprites[index][y * 16 + x] = gdImageGetPixel(output, x, y);
         }
     }
     
@@ -186,14 +182,14 @@ static int sortFilenames(const void *p1, const void *p2)
  * @return The wasteland sprites container 
  */
 
-static wlSpritesPtr readSprites(char *inputDir)
+static wlSprites readSprites(char *inputDir)
 {
     char *oldDir;
     DIR *dir;
     struct dirent *entry;
     char **filenames;
-    int quantity, width = 0, height = 0;
-    wlSpritesPtr sprites = NULL;
+    int quantity;
+    wlSprites sprites;
     int i;
     gdImagePtr image;
     FILE *file;
@@ -219,33 +215,25 @@ static wlSpritesPtr readSprites(char *inputDir)
     }
     closedir(dir);
     quantity = strListSize(filenames);
-    qsort(filenames, quantity, sizeof(char *), sortFilenames);    
-
+    qsort(filenames, quantity, sizeof(char *), sortFilenames);
+    
     // Build the sprite container
-    for (i = 0; i < quantity; i++)
+    sprites = (wlSprites) malloc(10 * sizeof(wlPixels));
+    for (i = 0; i < 10; i++)
     {
-        file = fopen(filenames[i], "rb");
-        if (!file)
+        sprites[i] = (wlPixels) malloc(16 * 16 * sizeof(wlPixel));
+        if (i < quantity)
         {
-            die("Unable to read PNG to %s: %s\n", filenames[i], strerror(errno));
-        }
-        image = gdImageCreateFromPng(file);
-        fclose(file);
-        if (i == 0)
-        {
-            width = gdImageSX(image);
-            height = gdImageSY(image);
-            sprites = wlSpritesCreate(quantity, width, height);            
-        }
-        else
-        {
-            if (gdImageSX(image) != width || gdImageSY(image) != height)
+            file = fopen(filenames[i], "rb");
+            if (!file)
             {
-                die("Sprites with different sizes are not supported.\n");
+                die("Unable to read PNG to %s: %s\n", filenames[i], strerror(errno));
             }
+            image = gdImageCreateFromPng(file);
+            fclose(file);
+            storeSprite(sprites, i, image);
+            gdImageDestroy(image);
         }
-        storeSprite(sprites, i, image);
-        gdImageDestroy(image);        
     }
     strListFreeWithItems(filenames);
     
@@ -269,7 +257,7 @@ static wlSpritesPtr readSprites(char *inputDir)
 int main(int argc, char *argv[])
 {  
     char *spritesFilename, *masksFilename, *inputDir;
-    wlSpritesPtr sprites;
+    wlSprites sprites;
     
     /* Process options and reset argument pointer */
     check_options(argc, argv);
@@ -291,7 +279,7 @@ int main(int argc, char *argv[])
     wlSpritesWriteFile(sprites, spritesFilename, masksFilename);
     
     /* Free memory */
-    wlSpritesDestroy(sprites);
+    free(sprites);
         
     /* Success */
     return 0;

@@ -1,6 +1,6 @@
-bin_PROGRAMS = unpacksprites
-unpacksprites_LDADD = ../libwasteland/libwasteland.la -lgd
-unpacksprites_SOURCES = \
+bin_PROGRAMS = wl_unpacksprites
+wl_unpacksprites_LDADD = ../libwasteland/libwasteland.la
+wl_unpacksprites_SOURCES = \
 	unpacksprites.c
 
 AM_CFLAGS = -Wall -Werror -O2 -I../libwasteland

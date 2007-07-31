@@ -4,133 +4,42 @@
  * See COPYING file for copying conditions
  */
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
-#include "wasteland.h"
-    
+#include "wasteland.h"    
 
 /**
- * Creates a new sprites container for the specified number of sprites and
- * the specified sprite dimensions. Returns a pointer
- * to a newly allocated wlSprites structure. You have to free this
- * structure with wlSpritesDestroy() when you no longer need it.
- *
- * @param quantity
- *            The number of sprites
- * @param width
- *            The sprite width
- * @param height
- *            The sprite height
- */
-
-wlSpritesPtr wlSpritesCreate(int quantity, int width, int height)
-{
-    wlSpritesPtr sprites;
-    int i;
-    
-    sprites = malloc(sizeof(wlSprites));
-    sprites->quantity = quantity;
-    sprites->spriteWidth = width;
-    sprites->spriteHeight = height;
-    sprites->pixels = malloc(quantity * sizeof(unsigned char *));
-    for (i = 0; i < quantity; i++)
-    {
-        sprites->pixels[i] = malloc(width * height * sizeof(unsigned char));
-    }
-    return sprites;
-}
-
-
-/**
- * Frees the memory allocated by the specified sprites container.
- *
- * @param sprites
- *            The sprites to free
- */
- 
-void wlSpritesDestroy(wlSpritesPtr sprites)
-{
-    int i;
-    
-    for (i = 0; i < sprites->quantity; i++)
-    {
-        free(sprites->pixels[i]);
-    }
-    free(sprites->pixels);
-    free(sprites);
-}
-
-
-/**
- * Clones the specified sprites container and returns the cloned sprites. The
- * clone is a newly allocated wlSprites structure and the pointer to this
- * structure is returned. You have to free this structure with
- * wlSpritesDestroy() when you no longer need it.
- *
- * @param sprites
- *            The sprites to clone
- * @return The cloned sprites
- */
-
-wlSpritesPtr wlSpritesClone(wlSpritesPtr sprites)
-{
-    wlSpritesPtr clone;
-    
-    clone = wlSpritesCreate(sprites->quantity, sprites->spriteWidth,
-            sprites->spriteHeight);
-    memcpy(clone->pixels, sprites->pixels,
-            sprites->quantity * sprites->spriteWidth * sprites->spriteHeight);
-    return clone;
-}                
-    
-
-/**
- * Reads sprites from the specified files and returns it as a wlSprites
- * struct. You have to specify quantity, width and height of the pic because
- * this information can't be read safely from the files.
- *
- * The function returns a pointer to a newly created wlSprites structure.
- * If you no longer need this structure you must free it with the function
- * wlSpritesDestroy().
+ * Reads sprites from the specified files and returns it as a an array of
+ * pixels. You have to release the allocated memory of this array when you
+ * no longer need it. If an error occurs while reading the source files then
+ * NULL is returned and you can use errno to find the reason.
+ * 
+ * A pixel in the returned array can be accessed like this:
+ * pixels[spriteNo][y * 16 + x]. A pixel is an integer between 0 and 16. 0-15
+ * is a color in the EGA color palette, 16 is transparent.
  *
  * @param spritesFilename
  *            The filename of the sprites file to read
  * @param masksFilename
  *            The filename of the sprite masks file to read
- * @param quantity
- *            The number of sprites to read
- * @param width
- *            The width of the sprites
- * @param height
- *            The height of the sprites
- * @return The pic
+ * @return The sprites as an array of pixels
  */
 
-wlSpritesPtr wlSpritesReadFile(char *spritesFilename, char *masksFilename, 
-        int quantity, int width, int height)
+wlSprites wlSpritesReadFile(char *spritesFilename, char *masksFilename)
 {
     FILE *spritesFile, *masksFile;
-    wlSpritesPtr sprites;
+    wlSprites sprites;
     
+    assert(spritesFilename != NULL);
+    assert(masksFilename != NULL);
     spritesFile = fopen(spritesFilename, "rb");
-    if (!spritesFile)
-    {
-        wlError("Unable to open '%s' for reading: %s\n", spritesFilename,
-            strerror(errno));
-        return NULL;
-    }
+    if (!spritesFile) return NULL;
     masksFile = fopen(masksFilename, "rb");
-    if (!masksFile)
-    {
-        fclose(spritesFile);
-        wlError("Unable to open '%s' for reading: %s\n", masksFilename,
-            strerror(errno));
-        return NULL;
-    }
-    sprites = wlSpritesReadStream(spritesFile, masksFile, quantity,
-            width, height);
+    if (!masksFile) return NULL;
+    sprites = wlSpritesReadStream(spritesFile, masksFile);
     fclose(spritesFile);
     fclose(masksFile);
     return sprites;
@@ -138,67 +47,59 @@ wlSpritesPtr wlSpritesReadFile(char *spritesFilename, char *masksFilename,
 
 
 /**
- * Reads sprites from the specified streams. The streams must already be open
- * and pointing to the sprites and sprite masks data. The streams are not
+ * Reads sprites from the specified file streams. The streams must already be
+ * open and pointing to the sprites and sprite masks data. The streams are not
  * closed by this function so you have to do this yourself.
- *
- * The function returns a pointer to a newly created wlSprites structure.
- * If you no longer need this structure you must free it with the function
- * wlSpritesDestroy().
+ * 
+ * You have to release the allocated memory of the returned array when you
+ * no longer need it. If an error occurs while reading the source streams then
+ * NULL is returned and you can use errno to find the reason.
+ * 
+ * A pixel in the returned array can be accessed like this:
+ * pixels[spriteNo][y * 16 + x]. A pixel is an integer between 0 and 16. 0-15
+ * is a color in the EGA color palette, 16 is transparent.
  *
  * @param spritesStream
  *            The stream to read sprites from
  * @param masksStream
  *            The stream to read sprite masks from
- * @param quantity
- *            The number of sprites to read
- * @param width
- *            The width of the sprites
- * @param height
- *            The height of the sprites
- * @return The sprites
+ * @return The sprites as an array of pixels
  */
 
-wlSpritesPtr wlSpritesReadStream(FILE *spritesStream, FILE *masksStream,
-        int quantity, int width, int height)
+wlSprites wlSpritesReadStream(FILE *spritesStream, FILE *masksStream)
 {
-    wlSpritesPtr sprites;
+    wlSprites sprites;
     int x, y, bit, pixel, sprite;
     int b;
     
-    sprites = wlSpritesCreate(quantity, width, height);
-    for (sprite = 0; sprite < quantity; sprite++)
+    assert(spritesStream != NULL);
+    assert(masksStream != NULL);
+    sprites = (wlSprites) malloc(10 * sizeof(wlPixels));
+    for (sprite = 0; sprite < 10; sprite++)
     {
+        sprites[sprite] = (wlPixels) malloc(16 * 16 * sizeof(wlPixel));
         for (bit = 0; bit < 4; bit++)
         {
-            for (y = 0; y < height; y++)
+            for (y = 0; y < 16; y++)
             {
-                for (x = 0; x < width; x+= 8)
+                for (x = 0; x < 16; x+= 8)
                 {
-                    if (feof(spritesStream))
-                    {
-                        wlError("Unexpected end of stream while reading sprite data\n");
-                        return NULL;
-                    }
                     b = fgetc(spritesStream);
+                    if (b == EOF) return NULL;
                     for (pixel = 0; pixel < 8; pixel++)
                     {
-                        sprites->pixels[sprite][y * width + x + pixel] |=
+                        sprites[sprite][y * 16 + x + pixel] |=
                             ((b >> (7 - pixel)) & 1) << bit;
                     }
 
                     // Read transparancy information when last bit has been read
                     if (bit == 3)
                     {
-                        if (feof(masksStream))
-                        {
-                            wlError("Unexpected end of stream while reading sprite mask data\n");
-                            return NULL;
-                        }
-                        b = fgetc(masksStream);                        
+                        b = fgetc(masksStream);
+                        if (b == EOF) return NULL;
                         for (pixel = 0; pixel < 8; pixel++)
                         {
-                            sprites->pixels[sprite][y * width + x + pixel] |=
+                            sprites[sprite][y * 16 + x + pixel] |=
                                 ((b >> (7 - pixel)) & 0x01) << 4;
                         }
                     }
@@ -212,7 +113,7 @@ wlSpritesPtr wlSpritesReadStream(FILE *spritesStream, FILE *masksStream,
 
 /**
  * Writes sprites to files. The function returns 1 if write was successfull
- * and 0 if write failed.
+ * and 0 if write failed. In this case you can read the reason from errno.
  *
  * @param sprites
  *            The sprites to write
@@ -223,25 +124,21 @@ wlSpritesPtr wlSpritesReadStream(FILE *spritesStream, FILE *masksStream,
  * @return 1 on success, 0 on failure
  */
 
-int wlSpritesWriteFile(wlSpritesPtr sprites, char *spritesFilename,
+int wlSpritesWriteFile(wlSprites sprites, char *spritesFilename,
         char *masksFilename)
 {
     FILE *spritesFile, *masksFile;
     int result;
     
+    assert(sprites != NULL);
+    assert(spritesFilename != NULL);
+    assert(masksFilename != NULL);
     spritesFile = fopen(spritesFilename, "wb");
-    if (!spritesFile)
-    {
-        wlError("Unable to open '%s' for writing: %s\n", spritesFilename,
-            strerror(errno));
-        return 0;
-    }
+    if (!spritesFile) return 0;
     masksFile = fopen(masksFilename, "wb");
     if (!masksFile)
     {
         fclose(spritesFile);
-        wlError("Unable to open '%s' for writing: %s\n", masksFilename,
-            strerror(errno));
         return 0;
     }
     result = wlSpritesWriteStream(sprites, spritesFile, masksFile);
@@ -252,10 +149,11 @@ int wlSpritesWriteFile(wlSpritesPtr sprites, char *spritesFilename,
 
 
 /**
- * Writes sprites to streams.  The streams must already be open and pointing
- * to the location where you want to write the sprites and the sprites masks to.
+ * Writes sprites to streams. The streams must already be open and pointing
+ * to the location where you want to write the sprites and the sprite masks to.
  * The streams are not closed by this function so you have to do this yourself.
- * The function returns 1 if write was successfull and 0 if write failed.
+ * The function returns 1 if write was successfull and 0 if write failed. In
+ * this case you can read the reason from errno.
  *
  * @param sprites
  *            The sprites to write
@@ -266,27 +164,30 @@ int wlSpritesWriteFile(wlSpritesPtr sprites, char *spritesFilename,
  * @return 1 on success, 0 on failure
  */
 
-int wlSpritesWriteStream(wlSpritesPtr sprites, FILE *spritesStream,
+int wlSpritesWriteStream(wlSprites sprites, FILE *spritesStream,
         FILE *masksStream)
 {
     int x, y, bit, sprite, b;
     int pixel;
-    
-    for (sprite = 0; sprite < sprites->quantity; sprite++)
+
+    assert(sprites != NULL);
+    assert(spritesStream != NULL);
+    assert(masksStream != NULL);
+    for (sprite = 0; sprite < 10; sprite++)
     {
         for (bit = 0; bit < 4; bit++)
         {
-            for (y = 0; y < sprites->spriteHeight; y++)
+            for (y = 0; y < 16; y++)
             {
-                for (x = 0; x < sprites->spriteWidth; x += 8)
+                for (x = 0; x < 16; x += 8)
                 {
                     b = 0;
                     for (pixel = 0; pixel < 8; pixel++)
                     {
-                        b |= ((sprites->pixels[sprite][y * sprites->spriteWidth +
+                        b |= ((sprites[sprite][y * 16 +
                             x + pixel] >> bit) & 0x01) << (7 - pixel);
                     }
-                    fputc(b, spritesStream);
+                    if (fputc(b, spritesStream) == EOF) return 0;
                     
                     // Write transparancy information when last bit has been
                     // written
@@ -295,11 +196,10 @@ int wlSpritesWriteStream(wlSpritesPtr sprites, FILE *spritesStream,
                         b = 0;
                         for (pixel = 0; pixel < 8; pixel++)
                         {
-                            b |= (sprites->pixels[sprite][y *
-                                sprites->spriteWidth + x + pixel] >> 4) <<
+                            b |= (sprites[sprite][y * 16 + x + pixel] >> 4) <<
                                 (7 - pixel);
                         }
-                        fputc(b, masksStream);
+                        if (fputc(b, masksStream) == EOF) return 0;
                     }
                 }
             }

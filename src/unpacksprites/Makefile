@@ -32,7 +32,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = i686-pc-linux-gnu
 host_triplet = i686-pc-linux-gnu
-bin_PROGRAMS = unpacksprites$(EXEEXT)
+bin_PROGRAMS = wl_unpacksprites$(EXEEXT)
 subdir = src/unpacksprites
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -46,9 +46,9 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am_unpacksprites_OBJECTS = unpacksprites.$(OBJEXT)
-unpacksprites_OBJECTS = $(am_unpacksprites_OBJECTS)
-unpacksprites_DEPENDENCIES = ../libwasteland/libwasteland.la
+am_wl_unpacksprites_OBJECTS = unpacksprites.$(OBJEXT)
+wl_unpacksprites_OBJECTS = $(am_wl_unpacksprites_OBJECTS)
+wl_unpacksprites_DEPENDENCIES = ../libwasteland/libwasteland.la
 DEFAULT_INCLUDES = -I. -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -61,8 +61,8 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(unpacksprites_SOURCES)
-DIST_SOURCES = $(unpacksprites_SOURCES)
+SOURCES = $(wl_unpacksprites_SOURCES)
+DIST_SOURCES = $(wl_unpacksprites_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -174,8 +174,8 @@ sysconfdir = ${prefix}/etc
 target_alias = 
 top_builddir = ../..
 top_srcdir = ../..
-unpacksprites_LDADD = ../libwasteland/libwasteland.la -lgd
-unpacksprites_SOURCES = \
+wl_unpacksprites_LDADD = ../libwasteland/libwasteland.la
+wl_unpacksprites_SOURCES = \
 	unpacksprites.c
 
 AM_CFLAGS = -Wall -Werror -O2 -I../libwasteland
@@ -240,9 +240,9 @@ clean-binPROGRAMS:
 	  echo " rm -f $$p $$f"; \
 	  rm -f $$p $$f ; \
 	done
-unpacksprites$(EXEEXT): $(unpacksprites_OBJECTS) $(unpacksprites_DEPENDENCIES) 
-	@rm -f unpacksprites$(EXEEXT)
-	$(LINK) $(unpacksprites_OBJECTS) $(unpacksprites_LDADD) $(LIBS)
+wl_unpacksprites$(EXEEXT): $(wl_unpacksprites_OBJECTS) $(wl_unpacksprites_DEPENDENCIES) 
+	@rm -f wl_unpacksprites$(EXEEXT)
+	$(LINK) $(wl_unpacksprites_OBJECTS) $(wl_unpacksprites_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
