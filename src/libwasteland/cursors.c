@@ -146,7 +146,7 @@ int wlCursorsWriteFile(wlImages cursors, char *filename)
 
 
 /**
- * Writes curors to a stream. The stream must already be open and pointing
+ * Writes cursors to a stream. The stream must already be open and pointing
  * to the location where you want to write the cursors to. The stream is not
  * closed by this function so you have to do this yourself. The function
  * returns 1 if write was successfull and 0 if write failed. In

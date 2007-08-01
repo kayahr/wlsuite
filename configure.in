@@ -24,4 +24,6 @@ AC_OUTPUT(
   src/packsprites/Makefile
   src/unpackcursors/Makefile
   src/packcursors/Makefile
+  src/unpackfont/Makefile
+  src/packfont/Makefile
 )

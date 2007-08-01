@@ -30,8 +30,8 @@
 
 static void display_usage(void) 
 {
-    printf("Usage: wl_unpackcursors [OPTION]... CURSORSFILE OUTPUTDIR\n");
-    printf("Unpacks cursors into PNG images.\n");
+    printf("Usage: wl_unpackfont [OPTION]... FONTFILE OUTPUTDIR\n");
+    printf("Unpacks font into PNG images.\n");
     printf("\nOptions\n");
     printf("  -h, --help              Display help and exit\n");
     printf("  -V, --version           Display version and exit\n");
@@ -45,7 +45,7 @@ static void display_usage(void)
 
 static void display_version(void) 
 {
-    printf("wl_unpackcursors %s\n", VERSION);
+    printf("wl_unpackfont %s\n", VERSION);
     printf("\n%s\n", COPYRIGHT);
     printf("This is free software; see the source for copying conditions. ");
     printf("There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS ");
@@ -113,17 +113,17 @@ static void check_options(int argc, char *argv[])
 
 
 /**
- * Writes a single cursor into the specified file in PNG format.
+ * Writes a single font glyph into the specified file in PNG format.
  * 
  * @param filename
  *            The output filename
- * @param cursors
- *            The cursors
- * @param cursorNo
- *            The cursor number to write
+ * @param font
+ *            The font
+ * @param glyph
+ *            The glyph number to write
  */
 
-static void writePng(char *filename, wlImages cursors, int cursorNo)
+static void writePng(char *filename, wlImages font, int glyph)
 {
     gdImagePtr output;
     int x, y, i;
@@ -132,7 +132,7 @@ static void writePng(char *filename, wlImages cursors, int cursorNo)
     int color;
     FILE *file;
 
-    output = gdImageCreate(16, 16);
+    output = gdImageCreate(8, 8);
     for (i = 0; i < 16; i++)
     {
         palette[i] = gdImageColorAllocate(output, wlPalette[i].red,
@@ -140,11 +140,11 @@ static void writePng(char *filename, wlImages cursors, int cursorNo)
     }
     transparent = gdImageColorAllocate(output, 0, 0, 0);
     gdImageColorTransparent(output, transparent);
-    for (y = 0; y < 16; y++)       
+    for (y = 0; y < 8; y++)       
     {
-        for (x = 0; x < 16; x++)
+        for (x = 0; x < 8; x++)
         {
-            color = cursors[cursorNo][y * 16 + x];
+            color = font[glyph][y * 8 + x];
             gdImageSetPixel(output, x, y, color < 16 ? palette[color] : transparent);
         }
     }    
@@ -160,15 +160,15 @@ static void writePng(char *filename, wlImages cursors, int cursorNo)
 
 
 /**
- * Writes all the cursors into the specified output directory.
+ * Writes all the font into the specified output directory.
  * 
  * @param outputDir
  *            The output directory
- * @param cursors
- *            The cursors to write
+ * @param font
+ *            The font to write
  */
 
-static void writePngs(char *outputDir, wlImages cursors)
+static void writePngs(char *outputDir, wlImages font)
 {
     int i;
     char *oldDir;
@@ -181,10 +181,10 @@ static void writePngs(char *outputDir, wlImages cursors)
                 strerror(errno));
         return;
     }
-    for (i = 0; i < 8; i++)
+    for (i = 0; i < 172; i++)
     {
-        sprintf(filename, "%i.png", i);
-        writePng(filename, cursors, i); 
+        sprintf(filename, "%03i.png", i);
+        writePng(filename, font, i); 
     }
     chdir(oldDir);
     free(oldDir);
@@ -204,7 +204,7 @@ static void writePngs(char *outputDir, wlImages cursors)
 int main(int argc, char *argv[])
 {  
     char *filename, *outputDir;
-    wlImages cursors;
+    wlImages font;
     
     /* Process options and reset argument pointer */
     check_options(argc, argv);
@@ -219,18 +219,18 @@ int main(int argc, char *argv[])
     outputDir = argv[1];
     
     /* Read the pic file */
-    cursors = wlCursorsReadFile(filename);
-    if (!cursors)
+    font = wlFontReadFile(filename);
+    if (!font)
     {
-        die("Unable to read cursors from %s: %s\n", filename,
+        die("Unable to read font from %s: %s\n", filename,
                 strerror(errno));
     }
 
     /* Write the PNG files */
-    writePngs(outputDir, cursors);
+    writePngs(outputDir, font);
     
     /* Free resources */
-    free(cursors);
+    free(font);
     
     /* Success */
     return 0;

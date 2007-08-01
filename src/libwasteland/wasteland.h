@@ -44,4 +44,9 @@ extern wlImages wlCursorsReadStream(FILE *stream);
 extern int      wlCursorsWriteFile(wlImages cursors, char *filename);
 extern int      wlCursorsWriteStream(wlImages cursors, FILE *stream);
 
+extern wlImages wlFontReadFile(char *filename);
+extern wlImages wlFontReadStream(FILE *stream);
+extern int      wlFontWriteFile(wlImages font, char *filename);
+extern int      wlFontWriteStream(wlImages font, FILE *stream);
+
 #endif

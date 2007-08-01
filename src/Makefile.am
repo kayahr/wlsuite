@@ -5,5 +5,7 @@ SUBDIRS = \
 	unpacksprites \
 	packsprites \
 	unpackcursors \
-	packcursors
+	packcursors \
+	unpackfont \
+	packfont
 	
