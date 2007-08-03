@@ -49,13 +49,9 @@ wlHuffmanNode * wlHuffmanReadNode(FILE *file, unsigned char *dataByte,
     
     // Build and return the node
     node = (wlHuffmanNode *) malloc(sizeof(wlHuffmanNode));
-    if (node)
-    {
-        node->left = left;
-        node->right = right;
-        node->payload = payload;
-    }
-    return node;
+    node->left = left;
+    node->right = right;
+    node->payload = payload;
 }
 
 
