@@ -7,5 +7,7 @@ SUBDIRS = \
 	unpackcursors \
 	packcursors \
 	unpackfont \
-	packfont
+	packfont \
+	unpackcpa \
+	decodecpa 
 	
