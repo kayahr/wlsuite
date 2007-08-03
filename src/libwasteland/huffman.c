@@ -52,6 +52,7 @@ wlHuffmanNode * wlHuffmanReadNode(FILE *file, unsigned char *dataByte,
     node->left = left;
     node->right = right;
     node->payload = payload;
+    return node;
 }
 
 
