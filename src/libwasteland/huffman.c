@@ -14,7 +14,7 @@
  * You have to provide pointers to 0-initialized dataByte/dataMask storage
  * bytes for the bit-based IO functions which are used to read the data. You
  * have to release allocated memory with wlHuffmanNodeFree() when you no longer
- * need it.
+ * need it. Returns NULL if an error occurs while reading from the stream.
  * 
  * @param file
  *            The file stream
@@ -28,23 +28,32 @@
 wlHuffmanNode * wlHuffmanReadNode(FILE *file, unsigned char *dataByte,
         unsigned char *dataMask)
 {
-    wlHuffmanNode *node;
-    int bit;
+    wlHuffmanNode *node, *left, *right;    
+    int bit, payload;
     
-    node = (wlHuffmanNode *) malloc(sizeof(wlHuffmanNode)); 
-    bit = wlReadBit(file, dataByte, dataMask);
-    if (bit == -1) return NULL;
+    // Read payload or sub nodes. 
+    if ((bit = wlReadBit(file, dataByte, dataMask)) == -1) return NULL;
     if (bit)
     {
-        node->left = NULL;
-        node->right = NULL;
-        node->payload = wlReadByte(file, dataByte, dataMask);
+        left = NULL;
+        right = NULL;
+        if ((payload = wlReadByte(file, dataByte, dataMask)) == -1) return NULL;
     }
     else
     {
-        node->left = wlHuffmanReadNode(file, dataByte, dataMask);
-        wlReadBit(file, dataByte, dataMask);
-        node->right = wlHuffmanReadNode(file, dataByte, dataMask);
+        if (!(left = wlHuffmanReadNode(file, dataByte, dataMask))) return NULL;
+        if (wlReadBit(file, dataByte, dataMask) == -1) return NULL;
+        if (!(right = wlHuffmanReadNode(file, dataByte, dataMask))) return NULL;
+        payload = 0;
+    }
+    
+    // Build and return the node
+    node = (wlHuffmanNode *) malloc(sizeof(wlHuffmanNode));
+    if (node)
+    {
+        node->left = left;
+        node->right = right;
+        node->payload = payload;
     }
     return node;
 }
@@ -78,6 +87,7 @@ void wlHuffmanFreeNode(wlHuffmanNode *node)
  *            Storage for last read byte
  * @param dateMask
  *            Storage for last bit mask
+ * @return The byte which was read from the stream or -1 when read failed
  */
  
 int wlHuffmanReadByte(FILE *file, wlHuffmanNode *rootNode,
@@ -124,75 +134,3 @@ int wlHuffmanReadWord(FILE *stream, wlHuffmanNode *rootNode,
     return high << 8 | low;
 }
 
-
-/**
- * Reads huffman encoded data (beginning at the translation table) from the
- * specified pointer and returns the decoded data with the specified size. You
- * have to release the allocated memory of the returned data when you no longer
- * need it.
- * 
- * @param data
- *            The huffman encoded data to decode
- * @param size
- *            The size of the decoded data block
- * @return The decoded data block
- */
-
-unsigned char * wlHuffmanDecode(FILE *file, int size)
-{
-    wlHuffmanNode *rootNode;
-    unsigned char dataByte, dataMask;
-    unsigned char *data;
-    int i;
-    
-    assert(file != NULL);
-    assert(size >= 0);
-    
-    // Read the huffman tree nodes
-    dataByte = 0;
-    dataMask = 0;
-    rootNode = wlHuffmanReadNode(file, &dataByte, &dataMask);
-    if (!rootNode) return NULL;
-    
-    // Allocate memory for decoded data
-    data = (unsigned char *) malloc(size);
-    if (data == NULL) return NULL;
-    
-    // Read and decode data
-    for (i = 0; i < size; i++)
-    {
-        int b;
-        
-        b = wlHuffmanReadByte(file, rootNode, &dataByte, &dataMask);
-        if (b < 0) return NULL;
-        data[i] = (unsigned char) b; 
-    }
-    
-    // Return the decoded data
-    return data;
-}
-
-
-/**
- * Encodes the specified data with the huffman algorithm and returns the
- * encoded data. You have to release the allocated memory of the returned data
- * when you no longer need it. The size of the encoded block is stored in
- * the referenced <var>encSize</var> variable.
- * 
- * @param data
- *            The data to encode
- * @param size
- *            The size of the data to encode
- * @param encSize
- *            Pointer to a variable to which the size of the encoded data will
- *            be stored.
- * @return The encoded data
- */
-
-unsigned char * wlHuffmanEncode(unsigned char *data, int size, int *encSize)
-{
-    assert(data != NULL);
-    assert(size >= 0);
-    assert(encSize != NULL);
-    return NULL;
-}

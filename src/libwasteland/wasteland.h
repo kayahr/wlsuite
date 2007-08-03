@@ -71,9 +71,6 @@ extern int             wlHuffmanReadByte(FILE *file, wlHuffmanNode *rootNode,
     unsigned char *dataByte, unsigned char *dataMask);
 extern int             wlHuffmanReadWord(FILE *stream, wlHuffmanNode *rootNode,
     unsigned char *dataByte, unsigned char *dataMask);
-extern unsigned char * wlHuffmanDecode(FILE *file, int size);
-extern unsigned char * wlHuffmanEncode(unsigned char *data, int size,
-    int *encSize);
 
 /* PIC functions */
 extern wlImage wlPicReadFile(char *filename);
