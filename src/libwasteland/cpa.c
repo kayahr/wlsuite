@@ -12,18 +12,28 @@
 #include "wasteland.h"
     
 
+/**
+ * Creates a new CPA animation container without any frames. The memory for the
+ * base frame is already allocated. When you no longer need this container then
+ * you must release it with the wlCpaFree() function.
+ * 
+ * @return The new CPA animation container
+ */
+
 wlCpaAnimation * wlCpaCreate()
 {
     wlCpaAnimation *animation;
     
     animation = (wlCpaAnimation *) malloc(sizeof(wlCpaAnimation));
     animation->baseFrame = (wlImage) malloc(288 * 128 * sizeof(wlPixel));
+    animation->quantity = 0;
+    animation->frames = NULL;
     return animation;
 }
 
 
 /**
- * Releases all the memory allocated for the specified animation. THis
+ * Releases all the memory allocated for the specified animation. This
  * includes all the frames (and the baseframe) and all update sequences in
  * the frames.
  * 
@@ -35,6 +45,7 @@ void wlCpaFree(wlCpaAnimation *animation)
 {
     int frame, update;
     
+    assert(animation != NULL);
     for (frame = 0; frame < animation->quantity; frame++)
     {
         for (update = 0; update < animation->frames[frame]->quantity; update++)
@@ -64,12 +75,13 @@ void wlCpaApplyFrame(wlImage image, wlCpaFrame *frame)
     int i, x;
     wlCpaUpdate *update;
     
+    assert(image != NULL);
+    assert(frame != NULL);
     for (i = 0; i < frame->quantity; i++)
     {
         update = frame->updates[i];
         for (x = 0; x < 8; x++)
         {
-            fflush(stdout);
             image[update->y * 288 + update->x + x] = update->pixels[x];
         }
     }
@@ -77,16 +89,15 @@ void wlCpaApplyFrame(wlImage image, wlCpaFrame *frame)
 
 
 /**
- * Reads pixels from the specified PIC file and returns them. You have to
- * free the allocated memory for the returned pixels when you no longer need
- * them.
+ * Reads a CPA animation from the specified file and returns it. You have to
+ * free the allocated memory for the returned animation data with wlCpaFree()
+ * when you no longer need it
  * 
- * If the specified file could not be read then NULL is returned and you can
- * retrieve the problem source from errno.
+ * If the specified file could not be read then NULL is returned.
  *
  * @param filename
- *            The filename of the pic file to read
- * @return The pixels
+ *            The filename of the CPA animation to read
+ * @return The CPA animation
  */
 
 wlCpaAnimation * wlCpaReadFile(char *filename)
@@ -104,18 +115,15 @@ wlCpaAnimation * wlCpaReadFile(char *filename)
 
 
 /**
- * Reads pixels from a PIC file stream and returns them. The stream must
- * already be open and pointing to the PIC data. The stream is not closed by
- * this function so you have to do this yourself. You have to
- * free the allocated memory for the returned pixels when you no longer need
- * them. 
+ * Reads a CPA animation from the specified stream and returns it. You have to
+ * free the allocated memory for the returned animation data with wlCpaFree()
+ * when you no longer need it
  * 
- * If an error occurs while reading data from the stream then NULL is returned
- * and you can retrieve the problem source from errno.
+ * If the specified stream could not be read then NULL is returned.
  *
- * @param stream
- *            The stream to read from
- * @return The pixels
+ * @param filename
+ *            The stream to read the CPA animation from
+ * @return The CPA animation
  */
 
 wlCpaAnimation * wlCpaReadStream(FILE *stream)
@@ -129,25 +137,33 @@ wlCpaAnimation * wlCpaReadStream(FILE *stream)
     wlCpaUpdate *update;
     int offset, delay;
     
-    animation = wlCpaCreate();
-    animation->quantity = 0;
-    animation->frames = NULL;
+    assert(stream != NULL);
     
     // Ignore first 8 bytes (Which is the size of the uncompressed base frame
     // block, the MSQ identifier and the disk number
-    fseek(stream, 8, SEEK_CUR);
+    if (fseek(stream, 8, SEEK_CUR)) return NULL;
     
     // Initialize huffman stream
     dataByte = 0;
     dataMask = 0;
-    rootNode = wlHuffmanReadNode(stream, &dataByte, &dataMask);
+    if (!(rootNode = wlHuffmanReadNode(stream, &dataByte, &dataMask)))
+        return NULL;    
         
+    // Create the animation container
+    animation = wlCpaCreate();
+    
     // Read pixels from huffman stream
     for (y = 0; y < 128; y++)
     {
         for (x = 0; x < 288; x+= 2)
         {
             b = wlHuffmanReadByte(stream, rootNode, &dataByte, &dataMask);
+            if (b == -1)
+            {
+                wlHuffmanFreeNode(rootNode);
+                wlCpaFree(animation);
+                return NULL;
+            }
             animation->baseFrame[y * 288 + x] = b >> 4;
             animation->baseFrame[y * 288 + x + 1] = b & 0x0f;
         }
@@ -161,15 +177,28 @@ wlCpaAnimation * wlCpaReadStream(FILE *stream)
     
     // Ignore next 8 bytes (Which is the size of the uncompressed animation
     // data, the next MSQ identifier and the disk number
-    fseek(stream, 8, SEEK_CUR);
+    if (fseek(stream, 8, SEEK_CUR))
+    {
+        wlCpaFree(animation);
+        return NULL;
+    }
     
     // Initialize huffman stream
     dataByte = 0;
     dataMask = 0;
-    rootNode = wlHuffmanReadNode(stream, &dataByte, &dataMask);
+    if (!(rootNode = wlHuffmanReadNode(stream, &dataByte, &dataMask)))
+    {
+        wlCpaFree(animation);
+        return NULL;
+    }
             
     // Skip the animation data size
-    wlHuffmanReadWord(stream, rootNode, &dataByte, &dataMask);
+    if (wlHuffmanReadWord(stream, rootNode, &dataByte, &dataMask) == -1)
+    {
+        wlHuffmanFreeNode(rootNode);
+        wlCpaFree(animation);
+        return NULL;
+    }
     
     // Read frames until the animation size is reached
     while (1)
@@ -177,10 +206,16 @@ wlCpaAnimation * wlCpaReadStream(FILE *stream)
         // Read delay value. If it's 0xffff then we reached the end of the
         // animation data
         delay = wlHuffmanReadWord(stream, rootNode, &dataByte, &dataMask);
+        if (delay == -1)
+        {
+            wlHuffmanFreeNode(rootNode);
+            wlCpaFree(animation);
+            return NULL;
+        }
         if (delay == 0xffff) break;
         
         // Read animation frame
-        frame = (wlCpaFrame *) malloc(sizeof(wlCpaFrame));        
+        frame = (wlCpaFrame *) malloc(sizeof(wlCpaFrame));
         frame->delay = delay; 
         frame->quantity = 0;
         frame->updates = NULL;
@@ -193,6 +228,12 @@ wlCpaAnimation * wlCpaReadStream(FILE *stream)
         while (1)
         {
             offset = wlHuffmanReadWord(stream, rootNode, &dataByte, &dataMask);
+            if (offset == -1)
+            {
+                wlHuffmanFreeNode(rootNode);
+                wlCpaFree(animation);
+                return NULL;
+            }
             if (offset == 0xffff) break;
         
             // Read the update sequence
@@ -202,6 +243,12 @@ wlCpaAnimation * wlCpaReadStream(FILE *stream)
             for (x = 0; x < 8; x += 2)
             {
                 b = wlHuffmanReadByte(stream, rootNode, &dataByte, &dataMask);
+                if (b == -1)
+                {
+                    wlHuffmanFreeNode(rootNode);
+                    wlCpaFree(animation);
+                    return NULL;
+                }
                 update->pixels[x] = b >> 4;
                 update->pixels[x + 1] = b & 0x0f;            
             }
