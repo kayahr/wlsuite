@@ -189,7 +189,7 @@ static void writePngs(char *outputDir, wlCpaAnimation *animation)
     for (i = 0; i < animation->quantity; i++)
     {
         wlCpaApplyFrame(frame, animation->frames[i]);
-        sprintf(filename, "%02i.png", i);
+        sprintf(filename, "%02i.png", i + 1);
         writePng(filename, frame); 
     }
     
