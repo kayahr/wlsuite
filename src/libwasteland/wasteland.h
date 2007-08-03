@@ -58,8 +58,6 @@ extern int wlReadBit(FILE *file, unsigned char *dataByte,
     unsigned char *dataMask);
 extern int wlReadByte(FILE *file, unsigned char *dataByte,
     unsigned char *dataMask);
-extern int wlReadWord(FILE *stream);
-extern long wlReadDWord(FILE *stream);
 
 /* Vertical XOR functions */
 extern void wlVXorDecode(unsigned char *data, int width, int height);
