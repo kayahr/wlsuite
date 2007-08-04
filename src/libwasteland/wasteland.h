@@ -127,6 +127,8 @@ extern void             wlCpaFree(wlCpaAnimation *animation);
 extern void             wlCpaApplyFrame(wlImage image, wlCpaFrame *frame);
 extern wlCpaAnimation * wlCpaReadFile(char *filename);
 extern wlCpaAnimation * wlCpaReadStream(FILE *stream);
+extern void             wlCpaAddFrame(wlCpaAnimation *animation, wlImage frame,
+    wlImage prevFrame, wlImage lastFrame, int delay);
 extern int              wlCpaWriteFile(wlCpaAnimation *animation,
     char *filename);
 extern int              wlCpaWriteStream(wlCpaAnimation *animation,

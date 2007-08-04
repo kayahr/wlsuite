@@ -294,6 +294,65 @@ int wlCpaWriteFile(wlCpaAnimation *animation, char *filename)
 
 
 /**
+ * Creates the animation data block for the specified animation. The size of
+ * the block is stored in the referenced <var>size</var> parameter.
+ * 
+ * @param animation
+ *            The CPA animation
+ * @param size
+ *            The size of the animation block is stored in this variable
+ * @return The animation block
+ */
+
+static unsigned char * buildAnimationData(wlCpaAnimation *animation, int *size)
+{
+    int i, ptr, j, k;
+    unsigned char *data;
+    wlCpaFrame *frame;
+    wlCpaUpdate *update;
+    int offset;    
+
+    // Calculate the size of the animation data
+    *size = 6;
+    for (i = 0; i < animation->quantity; i++)
+        *size += 4 + 6 * animation->frames[i]->quantity;
+   
+    // Allocate memory for the animation data
+    data = (unsigned char *) malloc(*size);
+    
+    // Encode animation data
+    ptr = 0;
+    data[ptr++] = (*size - 4) & 0xff;
+    data[ptr++] = (*size - 4) >> 8;
+    for (i = 0; i < animation->quantity; i++)
+    {
+        frame = animation->frames[i];
+        data[ptr++] = frame->delay & 0xff;
+        data[ptr++] = frame->delay >> 8;
+        for (j = 0; j < frame->quantity; j++)
+        {
+            update = frame->updates[j];
+            offset = (update->y * 320 + update->x) / 8;
+            data[ptr++] = offset & 0xff;
+            data[ptr++] = offset >> 8;
+            for (k = 0; k < 8; k += 2)
+            {
+                data[ptr++] = update->pixels[k] << 4 | update->pixels[k + 1];
+            }            
+        }
+        data[ptr++] = 0xff;
+        data[ptr++] = 0xff;
+    }
+    data[ptr++] = 0xff;
+    data[ptr++] = 0xff;
+    data[ptr++] = 0;
+    data[ptr++] = 0;
+    
+    return data;
+}
+
+
+/**
  * Writes a CPA animation to a stream. The function returns 1 if write was 
  * successfull and 0 if write failed. On failure you can check errno for the
  * reason.
@@ -307,7 +366,7 @@ int wlCpaWriteFile(wlCpaAnimation *animation, char *filename)
 
 int wlCpaWriteStream(wlCpaAnimation *animation, FILE *stream)
 {
-    int x, y, i;
+    int x, y, i, size;
     wlPixel encodedPixels[288 * 128];
     unsigned char *data;
     wlHuffmanNode *rootNode;
@@ -352,12 +411,114 @@ int wlCpaWriteStream(wlCpaAnimation *animation, FILE *stream)
                 &dataMask)) return 0;
     }
     
+    // Release the huffman tree and the node index and the base frame data
+    wlHuffmanFreeNode(rootNode);
+    free(nodeIndex);
+    free(data);
+    
     // Make sure last byte is written
     if (!wlFillByte(0, stream, &dataByte, &dataMask)) return 0;
     
-    // TODO Write second MSQ block
+    // Encode the animation data
+    data = buildAnimationData(animation, &size);
     
-    // Release encoded pixels and report success
+    // Write the uncompressed picture size
+    if (!wlWriteDWord(size, stream)) return 0;
+    
+    // Write the animation data header
+    if (fputc(0x08, stream) == EOF) return 0;
+    if (fputc(0x67, stream) == EOF) return 0;
+    if (fputc(0x01, stream) == EOF) return 0;
+    if (fputc(0x00, stream) == EOF) return 0;
+    
+    // Build huffman tree for animation data and write it to the stream
+    rootNode = wlHuffmanBuildTree(data, size, &nodeIndex);
+    dataByte = 0;
+    dataMask = 0;
+    if (!wlHuffmanWriteNode(rootNode, stream, &dataByte, &dataMask)) return 0;
+    
+    // Write encoded animation data
+    for (i = 0; i < size; i++)
+    {
+        if (!wlHuffmanWriteByte(data[i], stream, nodeIndex, &dataByte,
+                &dataMask)) return 0;
+    }
+    
+    // Release the huffman tree and the node index and the animation data
+    wlHuffmanFreeNode(rootNode);
+    free(nodeIndex);
+    free(data);
+    
+    // Make sure last byte is written
+    if (!wlFillByte(0, stream, &dataByte, &dataMask)) return 0;
+    
+    // Report success    
     return 1;
 }
 
+
+/**
+ * Calculates the difference between the two specified frames and writes this
+ * difference as an animation frame into the CPA animation. When encoding the
+ * 12th frame you must also specify the LAST frame. That's because Wasteland
+ * starts looping at this frame so we must also calculate the difference
+ * between the last and the 12th frame.
+ * 
+ * @param animation
+ *            The CPA animation
+ * @param frame
+ *            The current frame
+ * @param prevFrame
+ *            The previous frame
+ * @param lastFrame
+ *            The last frame of the animation. Must be provided when the 12th
+ *            frame is added. On all other calls this parameter must be NULL. 
+ * @param delay
+ *            The delay before the new frame
+ */
+
+void wlCpaAddFrame(wlCpaAnimation *animation, wlImage curFrame,
+    wlImage prevFrame, wlImage lastFrame, int delay)
+{
+    int x, y, changed, i;
+    wlCpaFrame *frame;
+    wlCpaUpdate *update;
+    
+    // Create the frame
+    frame = (wlCpaFrame *) malloc(sizeof(wlCpaFrame));
+    frame->delay = delay;
+    frame->quantity = 0;
+    frame->updates = NULL;
+    animation->quantity++;
+    animation->frames = realloc(animation->frames, sizeof(wlCpaFrame *) *
+            animation->quantity);
+    animation->frames[animation->quantity - 1] = frame;
+        
+    // Find out what is new in this frame
+    for (y = 0; y < 128; y++)
+    {
+        for (x = 0; x < 288; x += 8)
+        {            
+            changed = 0;
+            for (i = 0; i < 8; i++)
+            {
+                if (prevFrame[y * 288 + x + i] != curFrame[y * 288 + x + i])
+                    changed = 1;
+                if (lastFrame && lastFrame[y * 288 + x + i] 
+                        != curFrame[y * 288 + x + i])
+                    changed = 1;
+            }
+            if (changed)
+            {
+                update = (wlCpaUpdate *) malloc(sizeof(wlCpaUpdate));
+                update->x = x;
+                update->y = y;
+                memcpy(update->pixels, &curFrame[y * 288 + x], 8);
+                frame->quantity++;
+                frame->updates = realloc(frame->updates, sizeof(wlCpaUpdate *)
+                        * frame->quantity);
+                frame->updates[frame->quantity - 1] = update;
+            }
+        }        
+    }
+}

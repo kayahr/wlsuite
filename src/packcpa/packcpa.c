@@ -18,12 +18,6 @@
 #include <strutils/strlist.h>
 #include "config.h"
 
-#ifdef WIN32
-#define SEPARATOR '\\'
-#else
-#define SEPARATOR '/'
-#endif
-
 
 /**
  * Displays the usage text.
@@ -198,6 +192,12 @@ static wlCpaAnimation *readAnimation(char *inputDir)
     char **filenames;
     int quantity;
     wlCpaAnimation *animation;
+    int i;
+    wlImage baseFrame, frame, lastFrame;
+    FILE *delays;
+    char buffer[256];
+    char *line;
+    int delay;
 
     // Change to input directory but remember current directory
     oldDir = getcwd(NULL, 0);
@@ -222,11 +222,43 @@ static wlCpaAnimation *readAnimation(char *inputDir)
     quantity = strListSize(filenames);
     qsort(filenames, quantity, sizeof(char *), sortFilenames);
     
+    delays = fopen("delays.txt", "rt");
+    if (!delays) die("Unable to read delays.txt file: %s\n", strerror(errno));
+    
     // Build the animation container
     animation = wlCpaCreate();
-    animation->baseFrame = readImage(filenames[0]);
-
+    baseFrame = readImage(filenames[0]);
+    lastFrame = readImage(filenames[strListSize(filenames) - 1]);
+    memcpy(animation->baseFrame, baseFrame, 288 * 128 * sizeof(wlPixel));
+    for (i = 1; i < strListSize(filenames); i++)
+    {
+        // Read delay from delay.txt
+        while (1)
+        {
+            fgets(buffer, sizeof(buffer), delays);
+            line = strCreate();
+            strCopy(&line, buffer);
+            strTrim(&line);
+            if (strLength(line) == 0 || strStartsWith(line, "#"))
+            {
+                strFree(line);
+                continue;
+            }
+            delay = atoi(line);
+            strFree(line);
+            break;
+        }        
+        
+        frame = i == strListSize(filenames) - 1 ? lastFrame 
+                : readImage(filenames[i]);
+        wlCpaAddFrame(animation, frame, baseFrame, i == 11 ? lastFrame : NULL,
+                delay);
+        free(baseFrame);
+        baseFrame = frame;
+    }
+    free(baseFrame);
     strListFreeWithItems(filenames);
+    fclose(delays);
     
     // Go back to previous directory and then return the animation
     chdir(oldDir);
@@ -265,7 +297,7 @@ int main(int argc, char *argv[])
     /* Read animation from PNG files */
     animation = readAnimation(inputDir);
     
-    /* Write the cursors */
+    /* Write the animation */
     if (!wlCpaWriteFile(animation, filename))
     {
         die("Write to animation file %s failed: %s\n", filename, strerror(errno));
