@@ -174,7 +174,6 @@ wlCpaAnimation * wlCpaReadStream(FILE *stream)
     
     // Decode baseframe (VXOR)
     wlVXorDecode(animation->baseFrame, 288, 128);
-    return animation;
     
     // Ignore next 8 bytes (Which is the size of the uncompressed animation
     // data, the next MSQ identifier and the disk number

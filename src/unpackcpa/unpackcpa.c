@@ -167,6 +167,7 @@ static void writePngs(char *outputDir, wlCpaAnimation *animation)
     char *oldDir;
     char filename[6];
     wlImage frame;
+    FILE *delays;
     
     // Remember current directory and then switch to output directory
     oldDir = getcwd(NULL, 0);
@@ -184,15 +185,21 @@ static void writePngs(char *outputDir, wlCpaAnimation *animation)
     // Write the base frame PNG
     writePng("00.png", frame);
     
+    delays = fopen("delays.txt", "wt");
+    fprintf(delays, "# The delays between the animation frames (0-65534)\n\n");
+    
     // Cycle through all animation frames, apply the frame updates to our frame
     // and then write the frame PNG
     for (i = 0; i < animation->quantity; i++)
     {
         wlCpaApplyFrame(frame, animation->frames[i]);
         sprintf(filename, "%02i.png", i + 1);
-        writePng(filename, frame); 
+        writePng(filename, frame);
+        fprintf(delays, "%5i\n", animation->frames[i]->delay);
     }
     
+    fclose(delays);
+        
     // Go back to old directorry
     chdir(oldDir);
     
