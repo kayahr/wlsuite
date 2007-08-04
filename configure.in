@@ -27,5 +27,6 @@ AC_OUTPUT(
   src/unpackfont/Makefile
   src/packfont/Makefile
   src/unpackcpa/Makefile
+  src/packcpa/Makefile
   src/decodecpa/Makefile
 )

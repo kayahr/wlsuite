@@ -9,5 +9,6 @@ SUBDIRS = \
 	unpackfont \
 	packfont \
 	unpackcpa \
+	packcpa \
 	decodecpa 
 	

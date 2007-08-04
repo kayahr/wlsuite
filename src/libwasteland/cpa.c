@@ -174,6 +174,7 @@ wlCpaAnimation * wlCpaReadStream(FILE *stream)
     
     // Decode baseframe (VXOR)
     wlVXorDecode(animation->baseFrame, 288, 128);
+    return animation;
     
     // Ignore next 8 bytes (Which is the size of the uncompressed animation
     // data, the next MSQ identifier and the disk number
@@ -267,69 +268,97 @@ wlCpaAnimation * wlCpaReadStream(FILE *stream)
 
 
 /**
- * Writes pixels to a PIC file. The function returns 1 if write was successfull
- * and 0 if write failed. On failure you can check errno for the reason.
+ * Writes a CPA animation to a file. The function returns 1 if write was 
+ * successfull and 0 if write failed. On failure you can check errno for the
+ * reason.
  *
- * @param pixels
- *            The pixels to write
+ * @param animation
+ *            The CPA animation to write
  * @param filename
- *            The filename of the file to write the pixels to
+ *            The filename of the file to write the animation to
  * @return 1 on success, 0 on failure
  */
-/*
-int wlCpaWriteFile(wlImage pixels, char *filename)
+
+int wlCpaWriteFile(wlCpaAnimation *animation, char *filename)
 {
     FILE *file;
     int result;
     
-    assert(pixels != NULL);
+    assert(animation != NULL);
     assert(filename != NULL);
     file = fopen(filename, "wb");
     if (!file) return 0;
-    result = wlPicWriteStream(pixels, file);
+    result = wlCpaWriteStream(animation, file);
     fclose(file);
     return result;
 }
-*/
+
 
 /**
- * Writes pixels to a file stream. The stream must already be open and pointing
- * to the location where you want to write the pic to. The stream is not 
- * closed by this function so you have to do this yourself. The function 
- * returns 1 if write was successfull and 0 if write failed.
+ * Writes a CPA animation to a stream. The function returns 1 if write was 
+ * successfull and 0 if write failed. On failure you can check errno for the
+ * reason.
  *
- * @param pixels
- *            The pixels to write
- * @param stream
- *            The stream to write the pixels to
+ * @param animation
+ *            The CPA animation to write
+ * @param filename
+ *            The stream to write the animation to
  * @return 1 on success, 0 on failure
  */
-/*
-int wlCpaWriteStream(wlImage pixels, FILE *stream)
+
+int wlCpaWriteStream(wlCpaAnimation *animation, FILE *stream)
 {
-    int x, y;
-    int pixel;
+    int x, y, i;
     wlPixel encodedPixels[288 * 128];
+    unsigned char *data;
+    wlHuffmanNode *rootNode;
+    wlHuffmanNode **nodeIndex;
+    unsigned char dataByte, dataMask;
     
-    assert(pixels != NULL);
+    assert(animation != NULL);
     assert(stream != NULL);
     
-    // Encode the pixels
-    memcpy(encodedPixels, pixels, sizeof(wlPixel) * 288 * 128);
+    // Write the uncompressed picture size
+    if (!wlWriteDWord(288 * 128 / 2, stream)) return 0;
+    
+    // Write the MSQ header 
+    if (fprintf(stream, "msq") != 3) return 0;
+    if (fputc(0, stream) == EOF) return 0;
+    
+    // Encode the pixels of the base frame
+    memcpy(encodedPixels, animation->baseFrame, sizeof(wlPixel) * 288 * 128);
     wlVXorEncode(encodedPixels, 288, 128);
     
-    // Write encoded pixels to stream 
+    // Write encoded pixels to data block
+    data  = (unsigned char *) malloc(288 * 128 / 2);
     for (y = 0; y < 128; y++)
     {
         for (x = 0; x < 288; x += 2)
         {
-            pixel = (encodedPixels[y * 288 + x] << 4)
+            data[y * 144 + x / 2] = (encodedPixels[y * 288 + x] << 4)
                 | (encodedPixels[y * 288 + x + 1] & 0x0f);
-            if (fputc(pixel, stream) == EOF) return 0;
         }
     }
+    
+    // Build the huffman tree and write it to the stream
+    rootNode = wlHuffmanBuildTree(data, 288 * 128 / 2, &nodeIndex);
+    dataByte = 0;
+    dataMask = 0;
+    if (!wlHuffmanWriteNode(rootNode, stream, &dataByte, &dataMask)) return 0;
+    
+    // Write encoded pixel data
+    for (i = 0; i < 288 * 128 / 2; i++)
+    {
+        if (!wlHuffmanWriteByte(data[i], stream, nodeIndex, &dataByte,
+                &dataMask)) return 0;
+    }
+    
+    // Make sure last byte is written
+    if (!wlFillByte(0, stream, &dataByte, &dataMask)) return 0;
+    
+    // TODO Write second MSQ block
     
     // Release encoded pixels and report success
     return 1;
 }
-*/
+

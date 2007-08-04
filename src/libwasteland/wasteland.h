@@ -7,6 +7,7 @@
 #ifndef WASTELAND_H
 #define WASTELAND_H
 
+#include <sys/types.h>
 #include <stdio.h>
 
 typedef unsigned char wlPixel;
@@ -24,9 +25,13 @@ extern wlRGB wlPalette[16];
 
 typedef struct wlHuffmanNode_s
 {
+    struct wlHuffmanNode_s *parent;
     struct wlHuffmanNode_s *left;
     struct wlHuffmanNode_s *right;
-    unsigned char payload; 
+    unsigned char payload;
+    int key;
+    char keyBits;
+    int usage;
 } wlHuffmanNode;
 
 typedef struct
@@ -58,6 +63,13 @@ extern int wlReadBit(FILE *file, unsigned char *dataByte,
     unsigned char *dataMask);
 extern int wlReadByte(FILE *file, unsigned char *dataByte,
     unsigned char *dataMask);
+extern int wlWriteBit(char bit, FILE *file, unsigned char *dataByte,
+    unsigned char *dataMask);
+extern int wlWriteByte(unsigned char byte, FILE *file, unsigned char *dataByte,
+    unsigned char *dataMask);
+extern int wlWriteDWord(unsigned int dword, FILE *file);
+extern int wlFillByte(char bit, FILE *file, unsigned char *dataByte,
+    unsigned char *dataMask);
 
 /* Vertical XOR functions */
 extern void wlVXorDecode(unsigned char *data, int width, int height);
@@ -66,11 +78,22 @@ extern void wlVXorEncode(unsigned char *data, int width, int height);
 /* Huffman functions */
 extern wlHuffmanNode * wlHuffmanReadNode(FILE *file, unsigned char *dataByte,
     unsigned char *dataMask);
+extern int             wlHuffmanWriteNode(wlHuffmanNode *node, FILE *stream,
+    unsigned char *dataByte, unsigned char *dataMask);
 extern void            wlHuffmanFreeNode(wlHuffmanNode *node);
 extern int             wlHuffmanReadByte(FILE *file, wlHuffmanNode *rootNode,
     unsigned char *dataByte, unsigned char *dataMask);
+extern int             wlHuffmanWriteByte(unsigned char byte, FILE *file,
+    wlHuffmanNode **nodeIndex, unsigned char *dataByte,
+    unsigned char *dataMask);
 extern int             wlHuffmanReadWord(FILE *stream, wlHuffmanNode *rootNode,
     unsigned char *dataByte, unsigned char *dataMask);
+extern int             wlHuffmanWriteWord(u_int16_t word, FILE *stream,
+    wlHuffmanNode **nodeIndex, unsigned char *dataByte,
+    unsigned char *dataMask);
+extern wlHuffmanNode * wlHuffmanBuildTree(unsigned char *data, int size,
+    wlHuffmanNode ***index);
+extern void            wlHuffmanDumpNode(wlHuffmanNode *node, int indent);
 
 /* PIC functions */
 extern wlImage wlPicReadFile(char *filename);
@@ -104,7 +127,9 @@ extern void             wlCpaFree(wlCpaAnimation *animation);
 extern void             wlCpaApplyFrame(wlImage image, wlCpaFrame *frame);
 extern wlCpaAnimation * wlCpaReadFile(char *filename);
 extern wlCpaAnimation * wlCpaReadStream(FILE *stream);
-extern int              wlCpaWriteFile(wlCpaAnimation animation, char *filename);
-extern int              wlCpaWriteStream(wlCpaAnimation animation, FILE *stream);
+extern int              wlCpaWriteFile(wlCpaAnimation *animation,
+    char *filename);
+extern int              wlCpaWriteStream(wlCpaAnimation *animation,
+    FILE *stream);
 
 #endif
