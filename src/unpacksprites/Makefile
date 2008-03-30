@@ -73,7 +73,7 @@ AS = as
 AUTOCONF = ${SHELL} /home/k/Documents/Projects/c/wlsuite/missing --run autoconf
 AUTOHEADER = ${SHELL} /home/k/Documents/Projects/c/wlsuite/missing --run autoheader
 AUTOMAKE = ${SHELL} /home/k/Documents/Projects/c/wlsuite/missing --run automake-1.10
-AWK = mawk
+AWK = gawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
 CFLAGS = -g -O2
