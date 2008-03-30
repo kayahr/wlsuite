@@ -136,7 +136,7 @@ static gdImagePtr createImage(wlImage image)
     {
         for (x = 0; x < 288; x++)
         {
-            gdImageSetPixel(output, x, y, image[y * 288 + x]);
+            gdImageSetPixel(output, x, y, image->pixels[y * 288 + x]);
         }
     }    
     return output;

@@ -154,7 +154,7 @@ static void storeCursor(wlImages cursors, int index, gdImagePtr image)
         for (x = 0; x < 16; x++)
         {
             color = gdImageGetPixel(output, x, y);
-            cursors[index][y * 16 + x] = color < 16 ? color : color | 0xf0;
+            cursors->images[index]->pixels[y * 16 + x] = color < 16 ? color : color | 0xf0;
         }
     }
     
@@ -219,10 +219,9 @@ static wlImages readCursors(char *inputDir)
     qsort(filenames, quantity, sizeof(char *), sortFilenames);
     
     // Build the cursors container
-    cursors = (wlImages) malloc(8 * sizeof(wlImage));
+    cursors = wlImagesCreate(8, 16, 16);
     for (i = 0; i < 8; i++)
     {
-        cursors[i] = (wlImage) malloc(16 * 16 * sizeof(wlPixel));
         if (i < quantity)
         {
             file = fopen(filenames[i], "rb");
@@ -280,7 +279,7 @@ int main(int argc, char *argv[])
     wlCursorsWriteFile(cursors, filename);
     
     /* Free memory */
-    free(cursors);
+    wlImagesFree(cursors);
         
     /* Success */
     return 0;

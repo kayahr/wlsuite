@@ -153,7 +153,7 @@ static wlImage readImage(char *filename)
     {
         for (x = 0; x < 288; x++)
         {
-            result[y * 288 + x] = gdImageGetPixel(output, x, y);
+            result->pixels[y * 288 + x] = gdImageGetPixel(output, x, y);
         }
     }
     
@@ -226,7 +226,7 @@ static wlCpaAnimation *readAnimation(char *inputDir)
     if (!delays) die("Unable to read delays.txt file: %s\n", strerror(errno));
     
     // Build the animation container
-    animation = wlCpaCreate();
+    animation = wlCpaCreate(288, 128);
     baseFrame = readImage(filenames[0]);
     lastFrame = readImage(filenames[strListSize(filenames) - 1]);
     memcpy(animation->baseFrame, baseFrame, 288 * 128 * sizeof(wlPixel));

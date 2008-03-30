@@ -153,7 +153,7 @@ static void storeSprite(wlImages sprites, int index, gdImagePtr image)
     {
         for (x = 0; x < 16; x++)
         {
-            sprites[index][y * 16 + x] = gdImageGetPixel(output, x, y);
+            sprites->images[index]->pixels[y * 16 + x] = gdImageGetPixel(output, x, y);
         }
     }
     
@@ -218,10 +218,9 @@ static wlImages readSprites(char *inputDir)
     qsort(filenames, quantity, sizeof(char *), sortFilenames);
     
     // Build the sprite container
-    sprites = (wlImages) malloc(10 * sizeof(wlImage));
+    sprites = wlImagesCreate(10, 16, 16);
     for (i = 0; i < 10; i++)
     {
-        sprites[i] = (wlImage) malloc(16 * 16 * sizeof(wlPixel));
         if (i < quantity)
         {
             file = fopen(filenames[i], "rb");

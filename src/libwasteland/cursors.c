@@ -12,17 +12,18 @@
 #include "wasteland.h"    
 
 /**
- * Reads cursors from the specified file and returns it as a an array of
- * images. You have to release the allocated memory of this array when you
- * no longer need it. If an error occurs while reading the source file then
- * NULL is returned and you can use errno to find the reason.
+ * Reads cursors from the specified file and returns it as a list of
+ * images. You have to release the allocated memory of this list with the
+ * wlImagesFree() function when you no longer need it. If an error occurs
+ * while reading the source file then NULL is returned and you can use
+ * errno to find the reason.
  * 
  * A pixel in the returned array can be accessed like this:
- * cursors[cursorNo][y * 16 + x]. A pixel is an integer between 0 and 255. The
- * lower 4 bits is the EGA color palette index. The higher 4 bits are the
- * transparency bits for the lower 4 bit. So if bit 4 is set then this
- * means that bit 0 (The blue component) is transparent. This feature is not
- * used in the original wasteland cursors. These original cursors only have
+ * cursors->images[cursorNo]->pixels[y * 16 + x]. A pixel is an integer between
+ * 0 and 255. The lower 4 bits is the EGA color palette index. The higher 4
+ * bits are the transparency bits for the lower 4 bit. So if bit 4 is set then
+ * this means that bit 0 (The blue component) is transparent. This feature is
+ * not used in the original wasteland cursors. These original cursors only have
  * fully solid pixels or fully transparent pixels (Which means that all high
  * bits are set if the pixel is transparent or they are cleared if the pixel
  * is solid). If you don't need sub-pixel-transparency either then you can
@@ -54,16 +55,17 @@ wlImages wlCursorsReadFile(char *filename)
  * open and pointing to the cursors data. The stream is not closed by this 
  * function so you have to do this yourself.
  * 
- * You have to release the allocated memory of the returned array when you
- * no longer need it. If an error occurs while reading the source streams then
- * NULL is returned and you can use errno to find the reason.
+ * You have to release the allocated memory of the returned list with the
+ * wlImagesFree() function when you no longer need it. If an error occurs
+ * while reading the source streams then NULL is returned and you can use
+ * errno to find the reason.
  * 
- * A pixel in the returned array can be accessed like this:
- * cursors[cursorNo][y * 16 + x]. A pixel is an integer between 0 and 255. The
- * lower 4 bits is the EGA color palette index. The higher 4 bits are the
- * transparency bits for the lower 4 bit. So if bit 4 is set then this
- * means that bit 0 (The blue component) is transparent. This feature is not
- * used in the original wasteland cursors. These original cursors only have
+ * A pixel in the returned list can be accessed like this:
+ * cursors->images[cursorNo]->pixels[y * 16 + x]. A pixel is an integer between
+ * 0 and 255. The lower 4 bits is the EGA color palette index. The higher 4
+ * bits are the transparency bits for the lower 4 bit. So if bit 4 is set then
+ * this means that bit 0 (The blue component) is transparent. This feature is
+ * not used in the original wasteland cursors. These original cursors only have
  * fully solid pixels or fully transparent pixels (Which means that all high
  * bits are set if the pixel is transparent or they are cleared if the pixel
  * is solid). If you don't need sub-pixel-transparency either then you can
@@ -79,17 +81,18 @@ wlImages wlCursorsReadFile(char *filename)
 wlImages wlCursorsReadStream(FILE *stream)
 {
     wlImages cursors;
+    wlImage image;
     int cursor, bit, x, y, type, pixel, b;
     
     assert(stream != NULL);
-    cursors = (wlImages) malloc(8 * sizeof(wlImage));
-    for (cursor = 0; cursor < 8; cursor++)
+    cursors = wlImagesCreate(8, 16, 16);
+    for (cursor = 0; cursor < cursors->quantity; cursor++)
     {
-        cursors[cursor] = (wlImage) malloc(16 * 16 * sizeof(wlPixel));
+        image = cursors->images[cursor];
         
         for (bit = 0; bit < 4; bit++)
         {
-            for (y = 0; y < 16; y++)
+            for (y = 0; y < image->height; y++)
             {
                 for (type = 0; type < 2; type++)
                 {
@@ -101,12 +104,12 @@ wlImages wlCursorsReadStream(FILE *stream)
                         {
                             if (type)
                             {
-                                cursors[cursor][y * 16 + x + pixel] |=
+                                image->pixels[y * image->width + x + pixel] |=
                                     ((b >> (7 - pixel)) & 1) << bit;
                             }
                             else
                             {
-                                cursors[cursor][y * 16 + x + pixel] |=
+                                image->pixels[y * image->width + x + pixel] |=
                                     !((b >> (7 - pixel)) & 1) << (4 + bit);
                             }
                         }
@@ -124,7 +127,7 @@ wlImages wlCursorsReadStream(FILE *stream)
  * and 0 if write failed. In this case you can read the reason from errno.
  *
  * @param cursors
- *            The cursors to write (Array with 8 16x16 images)
+ *            The cursors to write
  * @param filename
  *            The filename of the file to write the cursors to
  * @return 1 on success, 0 on failure
@@ -153,7 +156,7 @@ int wlCursorsWriteFile(wlImages cursors, char *filename)
  * this case you can read the reason from errno.
  *
  * @param cursors
- *            The cursors to write (Array with 8 16x16 images)
+ *            The cursors to write
  * @param stream
  *            The stream to write the cursors to
  * @return 1 on success, 0 on failure
@@ -162,14 +165,16 @@ int wlCursorsWriteFile(wlImages cursors, char *filename)
 int wlCursorsWriteStream(wlImages cursors, FILE *stream)
 {
     int cursor, bit, y, type, x, pixel, b;
+    wlImage image;
  
     assert(cursors != NULL);
     assert(stream != NULL);
-    for (cursor = 0; cursor < 8; cursor++)
+    for (cursor = 0; cursor < cursors->quantity; cursor++)
     {
+        image = cursors->images[cursor];
         for (bit = 0; bit < 4; bit++)   
         {
-            for (y = 0; y < 16; y++)
+            for (y = 0; y < image->height; y++)
             {
                 for (type = 0; type < 2; type++)
                 {
@@ -180,13 +185,13 @@ int wlCursorsWriteStream(wlImages cursors, FILE *stream)
                         {
                             if (type)
                             {
-                                b |= ((cursors[cursor][y * 16 + x + pixel]
-                                    >> bit) & 0x01) << (7 - pixel);
+                                b |= ((image->pixels[y * image->width + x
+                                    + pixel] >> bit) & 0x01) << (7 - pixel);
                             }
                             else
                             {
-                                b |= !((cursors[cursor][y * 16 + x + pixel]
-                                    >> (4 + bit)) & 0x01) << (7 - pixel);
+                                b |= !((image->pixels[y * image->width + x
+                                    + pixel] >> (4 + bit)) & 0x01) << (7 - pixel);
                             }
                         }
                         if (fputc(b, stream) == EOF) return 0;

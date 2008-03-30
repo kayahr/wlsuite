@@ -11,8 +11,21 @@
 #include <stdio.h>
 
 typedef unsigned char wlPixel;
-typedef wlPixel * wlImage;
-typedef wlImage * wlImages;
+
+typedef struct
+{
+    int width;
+    int height;
+    wlPixel * pixels;
+} wlImageStruct;
+typedef wlImageStruct * wlImage;
+
+typedef struct
+{
+    int quantity;
+    wlImage * images;
+} wlImagesStruct;
+typedef wlImagesStruct * wlImages;
 
 typedef struct
 {
@@ -95,11 +108,22 @@ extern wlHuffmanNode * wlHuffmanBuildTree(unsigned char *data, int size,
     wlHuffmanNode ***index);
 extern void            wlHuffmanDumpNode(wlHuffmanNode *node, int indent);
 
+/* Image functions */
+extern wlImage wlImageCreate(int width, int height);
+extern void    wlImageFree(wlImage image);
+extern wlImage wlImageClone(wlImage image);
+extern void    wlImageVXorEncode(wlImage image);
+extern void    wlImageVXorDecode(wlImage image);
+
 /* PIC functions */
 extern wlImage wlPicReadFile(char *filename);
 extern wlImage wlPicReadStream(FILE *stream);
 extern int     wlPicWriteFile(wlImage pixels, char *filename);
 extern int     wlPicWriteStream(wlImage pixels, FILE *stream);
+
+/* Images functions */
+extern wlImages wlImagesCreate(int quantity, int width, int height);
+extern void     wlImagesFree(wlImages images);
 
 /* Sprites functions */
 extern wlImages wlSpritesReadFile(char *spritesFilename, char *masksFilename);
@@ -108,6 +132,10 @@ extern int      wlSpritesWriteFile(wlImages sprites, char *spritesFilename,
     char *masksFilename);
 extern int      wlSpritesWriteStream(wlImages sprites, FILE *spritesStream,
     FILE *masksStream);
+
+/* Tiles functions */
+/*extern wlTilesets wlTilesetsReadFile(char *filename, int tilesets);
+extern wlTilesets wlTilesetsReadStream(FILE *stream);*/
 
 /* Cursors functions */
 extern wlImages wlCursorsReadFile(char *filename);
@@ -122,7 +150,7 @@ extern int      wlFontWriteFile(wlImages font, char *filename);
 extern int      wlFontWriteStream(wlImages font, FILE *stream);
 
 /* CPA functions */
-extern wlCpaAnimation * wlCpaCreate();
+extern wlCpaAnimation * wlCpaCreate(int width, int height);
 extern void             wlCpaFree(wlCpaAnimation *animation);
 extern void             wlCpaApplyFrame(wlImage image, wlCpaFrame *frame);
 extern wlCpaAnimation * wlCpaReadFile(char *filename);

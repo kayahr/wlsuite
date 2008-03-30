@@ -112,24 +112,24 @@ static void check_options(int argc, char *argv[])
  *            The wasteland pic
  */
 
-static void writePng(char *filename, wlImage pixels)
+static void writePng(char *filename, wlImage pic)
 {
     gdImagePtr output;
     int x, y, i;
     int palette[16];
     FILE *file;
 
-    output = gdImageCreate(288, 128);
+    output = gdImageCreate(pic->width, pic->height);
     for (i = 0; i < 16; i++)
     {
         palette[i] = gdImageColorAllocate(output, wlPalette[i].red,
                 wlPalette[i].green, wlPalette[i].blue);
     }
-    for (y = 0; y < 128; y++)       
+    for (y = 0; y < pic->height; y++)       
     {
-        for (x = 0; x < 288; x++)
+        for (x = 0; x < pic->width; x++)
         {
-            gdImageSetPixel(output, x, y, palette[pixels[y * 288 + x]]);
+            gdImageSetPixel(output, x, y, palette[pic->pixels[y * pic->width + x]]);
         }
     }    
     file = fopen(filename, "wb");
@@ -156,7 +156,7 @@ static void writePng(char *filename, wlImage pixels)
 int main(int argc, char *argv[])
 {  
     char *source, *dest;
-    wlImage pixels;
+    wlImage pic;
     
     /* Process options and reset argument pointer */
     check_options(argc, argv);
@@ -171,17 +171,17 @@ int main(int argc, char *argv[])
     dest = argv[1];
     
     /* Read the pic file */
-    pixels = wlPicReadFile(source);
-    if (!pixels)
+    pic = wlPicReadFile(source);
+    if (!pic)
     {
         die("Unable to read PIC file %s: %s\n", source, strerror(errno));
     }
 
     /* Write the PNG file */
-    writePng(dest, pixels);
+    writePng(dest, pic);
     
     /* Free resources */
-    free(pixels);
+    wlImageFree(pic);
     
     /* Success */
     return 0;

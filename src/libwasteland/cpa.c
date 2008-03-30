@@ -17,15 +17,19 @@
  * base frame is already allocated. When you no longer need this container then
  * you must release it with the wlCpaFree() function.
  * 
+ * @param width
+ *            The animation width
+ * @param height
+ *            The animation height
  * @return The new CPA animation container
  */
 
-wlCpaAnimation * wlCpaCreate()
+wlCpaAnimation * wlCpaCreate(int width, int height)
 {
     wlCpaAnimation *animation;
     
     animation = (wlCpaAnimation *) malloc(sizeof(wlCpaAnimation));
-    animation->baseFrame = (wlImage) malloc(288 * 128 * sizeof(wlPixel));
+    animation->baseFrame = wlImageCreate(width, height);
     animation->quantity = 0;
     animation->frames = NULL;
     return animation;
@@ -82,7 +86,8 @@ void wlCpaApplyFrame(wlImage image, wlCpaFrame *frame)
         update = frame->updates[i];
         for (x = 0; x < 8; x++)
         {
-            image[update->y * 288 + update->x + x] = update->pixels[x];
+            image->pixels[update->y * image->width + update->x + x] =
+                update->pixels[x];
         }
     }
 }
@@ -129,7 +134,7 @@ wlCpaAnimation * wlCpaReadFile(char *filename)
 wlCpaAnimation * wlCpaReadStream(FILE *stream)
 {
     wlCpaAnimation *animation;
-    int x, y;
+    int x, y, w, h;
     int b;
     unsigned char dataByte, dataMask;
     wlHuffmanNode *rootNode;
@@ -150,12 +155,14 @@ wlCpaAnimation * wlCpaReadStream(FILE *stream)
         return NULL;    
         
     // Create the animation container
-    animation = wlCpaCreate();
+    animation = wlCpaCreate(288, 128);
     
     // Read pixels from huffman stream
-    for (y = 0; y < 128; y++)
+    w = animation->baseFrame->width;
+    h = animation->baseFrame->height;
+    for (y = 0; y < h; y++)
     {
-        for (x = 0; x < 288; x+= 2)
+        for (x = 0; x < w; x+= 2)
         {
             b = wlHuffmanReadByte(stream, rootNode, &dataByte, &dataMask);
             if (b == -1)
@@ -164,8 +171,8 @@ wlCpaAnimation * wlCpaReadStream(FILE *stream)
                 wlCpaFree(animation);
                 return NULL;
             }
-            animation->baseFrame[y * 288 + x] = b >> 4;
-            animation->baseFrame[y * 288 + x + 1] = b & 0x0f;
+            animation->baseFrame->pixels[y * w + x] = b >> 4;
+            animation->baseFrame->pixels[y * w + x + 1] = b & 0x0f;
         }
     }
     
@@ -173,7 +180,7 @@ wlCpaAnimation * wlCpaReadStream(FILE *stream)
     wlHuffmanFreeNode(rootNode);
     
     // Decode baseframe (VXOR)
-    wlVXorDecode(animation->baseFrame, 288, 128);
+    wlImageVXorDecode(animation->baseFrame);
     
     // Ignore next 8 bytes (Which is the size of the uncompressed animation
     // data, the next MSQ identifier and the disk number
@@ -480,9 +487,9 @@ int wlCpaWriteStream(wlCpaAnimation *animation, FILE *stream)
 void wlCpaAddFrame(wlCpaAnimation *animation, wlImage curFrame,
     wlImage prevFrame, wlImage lastFrame, int delay)
 {
-    int x, y, changed, i;
+    int x, y, changed, i, w, h;
     wlCpaFrame *frame;
-    wlCpaUpdate *update;
+    wlCpaUpdate *update;    
     
     // Create the frame
     frame = (wlCpaFrame *) malloc(sizeof(wlCpaFrame));
@@ -495,17 +502,19 @@ void wlCpaAddFrame(wlCpaAnimation *animation, wlImage curFrame,
     animation->frames[animation->quantity - 1] = frame;
         
     // Find out what is new in this frame
-    for (y = 0; y < 128; y++)
+    w = animation->baseFrame->width;
+    h = animation->baseFrame->height;
+    for (y = 0; y < h; y++)
     {
-        for (x = 0; x < 288; x += 8)
+        for (x = 0; x < w; x += 8)
         {            
             changed = 0;
             for (i = 0; i < 8; i++)
             {
-                if (prevFrame[y * 288 + x + i] != curFrame[y * 288 + x + i])
-                    changed = 1;
-                if (lastFrame && lastFrame[y * 288 + x + i] 
-                        != curFrame[y * 288 + x + i])
+                if (prevFrame->pixels[y * w + x + i] !=
+                    curFrame->pixels[y * w + x + i]) changed = 1;
+                if (lastFrame && lastFrame->pixels[y * w + x + i] 
+                        != curFrame->pixels[y * w + x + i])
                     changed = 1;
             }
             if (changed)

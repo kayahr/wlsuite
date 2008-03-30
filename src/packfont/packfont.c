@@ -154,7 +154,7 @@ static void storeFontGlyph(wlImages font, int index, gdImagePtr image)
         for (x = 0; x < 8; x++)
         {
             color = gdImageGetPixel(output, x, y);
-            font[index][y * 8 + x] = color < 16 ? color : color | 0xf0;
+            font->images[index]->pixels[y * 8 + x] = color < 16 ? color : color | 0xf0;
         }
     }
     
@@ -222,7 +222,6 @@ static wlImages readFont(char *inputDir)
     font = (wlImages) malloc(172 * sizeof(wlImage));
     for (i = 0; i < 172; i++)
     {
-        font[i] = (wlImage) malloc(8 * 8 * sizeof(wlPixel));
         if (i < quantity)
         {
             file = fopen(filenames[i], "rb");
@@ -280,7 +279,7 @@ int main(int argc, char *argv[])
     wlFontWriteFile(font, filename);
     
     /* Free memory */
-    free(font);
+    wlImagesFree(font);
         
     /* Success */
     return 0;

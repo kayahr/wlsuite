@@ -131,8 +131,11 @@ static void writePng(char *filename, wlImages font, int glyph)
     int transparent;
     int color;
     FILE *file;
+    wlImage image;
+    
+    image = font->images[glyph];
 
-    output = gdImageCreate(8, 8);
+    output = gdImageCreate(image->width, image->height);
     for (i = 0; i < 16; i++)
     {
         palette[i] = gdImageColorAllocate(output, wlPalette[i].red,
@@ -140,11 +143,11 @@ static void writePng(char *filename, wlImages font, int glyph)
     }
     transparent = gdImageColorAllocate(output, 0, 0, 0);
     gdImageColorTransparent(output, transparent);
-    for (y = 0; y < 8; y++)       
+    for (y = 0; y < image->height; y++)       
     {
-        for (x = 0; x < 8; x++)
+        for (x = 0; x < image->width; x++)
         {
-            color = font[glyph][y * 8 + x];
+            color = image->pixels[y * image->width + x];
             gdImageSetPixel(output, x, y, color < 16 ? palette[color] : transparent);
         }
     }    
@@ -230,7 +233,7 @@ int main(int argc, char *argv[])
     writePngs(outputDir, font);
     
     /* Free resources */
-    free(font);
+    wlImagesFree(font);
     
     /* Success */
     return 0;
