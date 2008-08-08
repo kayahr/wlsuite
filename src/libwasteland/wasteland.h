@@ -29,6 +29,13 @@ typedef wlImagesStruct * wlImages;
 
 typedef struct
 {
+    int quantity;
+    wlImages * tilesets;
+} wlTilesetsStruct;
+typedef wlTilesetsStruct * wlTilesets;
+
+typedef struct
+{
     unsigned char red;
     unsigned char green;
     unsigned char blue;
@@ -68,7 +75,21 @@ typedef struct
     wlCpaFrame ** frames;
 } wlCpaAnimation;
 
-                
+enum wlMsqType
+{
+    UNCOMPRESSED,
+    COMPRESSED,
+    CPA_ANIMATION
+};
+
+typedef struct
+{
+    enum wlMsqType type;
+    int disk;
+    int size;
+} wlMsqHeaderStruct;
+typedef wlMsqHeaderStruct * wlMsqHeader;
+
 extern void wlError(char *message, ...);
 
 /* IO functions */
@@ -134,8 +155,9 @@ extern int      wlSpritesWriteStream(wlImages sprites, FILE *spritesStream,
     FILE *masksStream);
 
 /* Tiles functions */
-/*extern wlTilesets wlTilesetsReadFile(char *filename, int tilesets);
-extern wlTilesets wlTilesetsReadStream(FILE *stream);*/
+extern wlTilesets wlTilesetsReadFile(char *filename);
+extern void       wlTilesetsFree(wlTilesets tileSets);
+extern wlImages   wlTilesReadStream(FILE *stream);
 
 /* Cursors functions */
 extern wlImages wlCursorsReadFile(char *filename);
@@ -161,5 +183,8 @@ extern int              wlCpaWriteFile(wlCpaAnimation *animation,
     char *filename);
 extern int              wlCpaWriteStream(wlCpaAnimation *animation,
     FILE *stream);
+
+/* MSQ functions */
+extern wlMsqHeader wlMsqReadHeader(FILE *stream);
 
 #endif

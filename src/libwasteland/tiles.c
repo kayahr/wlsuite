@@ -9,50 +9,146 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
-#include "wasteland.h"    
+#include "wasteland.h"
 
 
 /**
- * Reads tiles from the specified file and returns it as a an array of
- * images. You have to release the allocated memory of this array when you
- * no longer need it. If an error occurs while reading the source file then
- * NULL is returned and you can use errno to find the reason.
- * 
+ * Reads all tilesets from the specified file and returns it. You have to
+ * release the allocated memory of the returned data when you no longer need it
+ * by using the wlTilesetsFree() function. If an error occurs while reading the
+ * source file then NULL is returned and you can use errno to find the reason.
+ *
  * A pixel in the returned array can be accessed like this:
- * pixels[tileNo][y * 16 + x]. A pixel is an integer between 0 and 16. 0-15
- * is a color in the EGA color palette, 16 is transparent.
+ * tilesets->tilesets[tilesetNo]->images[tileNo]->pixels[y * 16 + x]
+ * A pixel is an integer between 0 and 16. 0-15 is a color in the EGA color
+ * palette, 16 is transparent.
  *
  * @param filename
  *            The filename of the tiles file to read
- * @return The tiles as an array of pixels
+ * @return The tilesets or NULL if they could not be read
  */
 
-wlImages wlTilesReadFile(char *filename)
+wlTilesets wlTilesetsReadFile(char *filename)
 {
     FILE *file;
     wlImages tiles;
-    
+    wlTilesets tilesets;
+
+    // Validate parameters
     assert(filename != NULL);
+
+    // Open the file for reading and abort if this fails
     file = fopen(filename, "rb");
     if (!file) return NULL;
-    tiles = wlTilesReadStream(file);
+
+    // Create the tilesets structure
+    tilesets = (wlTilesets) malloc(sizeof(wlTilesetsStruct));
+    tilesets->quantity = 0;
+    tilesets->tilesets = NULL;
+
+    // Read the tilesets
+    while ((tiles = wlTilesReadStream(file)))
+    {
+        if (tilesets->quantity)
+        {
+            tilesets->tilesets = (wlImages *) realloc((tilesets->tilesets),
+                    sizeof(wlImages *) * (tilesets->quantity + 1));
+            tilesets->tilesets[tilesets->quantity] = tiles;
+        }
+        else
+        {
+            tilesets->tilesets = (wlImages * ) malloc(sizeof(wlImages *));
+            tilesets->tilesets[0] = tiles;
+        }
+        tilesets->quantity++;
+    }
+
+    // Close the file stream
     fclose(file);
-    return tiles;
+
+    // Return the tilesets
+    return tilesets;
+}
+
+/**
+ * Releases all the memory allocated for the specified tilesets.
+ *
+ * @param tilesets
+ *            The tilesets to free
+ */
+
+void wlTilesetsFree(wlTilesets tilesets)
+{
+    int i;
+
+    assert(tilesets != NULL);
+    for (i = 0; i < tilesets->quantity; i++)
+    {
+        wlImagesFree(tilesets->tilesets[i]);
+    }
+    free(tilesets);
 }
 
 
 /**
- * Reads tiles from the specified file stream. The stream must already be
- * open and pointing to the tiles data. The stream is not closed by this
+ * Reads image from a huffman encoded file stream and returns it. The stream
+ * must already be open and pointing to the encoded PIC data. The stream is not
+ * closed by this function so you have to do this yourself. You have to
+ * free the allocated memory for the returned image with the wlImageFree()
+ * function when you no longer need it.
+ *
+ * If an error occurs while reading data from the stream then NULL is returned
+ * and you can retrieve the problem source from errno.
+ *
+ * @param stream
+ *            The stream to read from
+ * @param image
+ *            The image to put the pixels in
+ * @param rootNode
+ *            The root node of the huffman tree
+ * @param dataByte
+ *            Storage for last read byte
+ * @param dateMask
+ *            Storage for last bit mask
+ * @return The image
+ */
+
+static wlImage readTile(FILE *stream, wlImage image, wlHuffmanNode *rootNode,
+        unsigned char *dataByte, unsigned char *dataMask)
+{
+    int x, y;
+    int b;
+
+    for (y = 0; y < image->height; y++)
+    {
+        for (x = 0; x < image->width; x+= 2)
+        {
+            b = wlHuffmanReadByte(stream, rootNode, dataByte, dataMask);
+            if (b == EOF) return NULL;
+            image->pixels[y * image->width + x] = b >> 4;
+            image->pixels[y * image->width + x + 1] = b & 0x0f;
+        }
+    }
+
+    wlImageVXorDecode(image);
+    return image;
+}
+
+
+/**
+ * Reads a tileset from the specified file stream. The stream must already be
+ * open and pointing to correct tileset. The stream is not closed by this
  * function so you have to do this yourself.
- * 
+ *
  * You have to release the allocated memory of the returned array when you
- * no longer need it. If an error occurs while reading the source stream then
- * NULL is returned and you can use errno to find the reason.
- * 
+ * no longer need it by using the wlImagesFree function. If an error occurs
+ * while reading the source stream then NULL is returned and you can use
+ * errno to find the reason.
+ *
  * A pixel in the returned array can be accessed like this:
- * pixels[tileNo][y * 16 + x]. A pixel is an integer between 0 and 16. 0-15
- * is a color in the EGA color palette, 16 is transparent.
+ * tileset->images[tileNo]->pixels[y * 16 + x]. A pixel is an integer
+ * between 0 and 16. 0-15 is a color in the EGA color palette, 16 is
+ * transparent.
  *
  * @param stream
  *            The stream to read the tiles from
@@ -61,141 +157,50 @@ wlImages wlTilesReadFile(char *filename)
 
 wlImages wlTilesReadStream(FILE *stream)
 {
-    wlImages pics;
-    int x, y, bit, pixel, sprite;
-    int b;
-    
+    wlImages tiles;
+    wlImage tile;
+    wlMsqHeader header;
+    int quantity, i;
+    unsigned char dataByte, dataMask;
+    wlHuffmanNode *rootNode;
+
+    // Validate parameters
     assert(stream != NULL);
-    tiles = (wlImages) malloc(10 * sizeof(wlImage));
-    for (sprite = 0; sprite < 10; sprite++)
+
+    // Read and validate the MSQ header
+    header = wlMsqReadHeader(stream);
+    if (!header) return NULL;
+    if (header->type != COMPRESSED)
     {
-        sprites[sprite] = (wlImage) malloc(16 * 16 * sizeof(wlPixel));
-        for (bit = 0; bit < 4; bit++)
-        {
-            for (y = 0; y < 16; y++)
-            {
-                for (x = 0; x < 16; x+= 8)
-                {
-                    b = fgetc(spritesStream);
-                    if (b == EOF) return NULL;
-                    for (pixel = 0; pixel < 8; pixel++)
-                    {
-                        sprites[sprite][y * 16 + x + pixel] |=
-                            ((b >> (7 - pixel)) & 1) << bit;
-                    }
-
-                    // Read transparancy information when last bit has been read
-                    if (bit == 3)
-                    {
-                        b = fgetc(masksStream);
-                        if (b == EOF) return NULL;
-                        for (pixel = 0; pixel < 8; pixel++)
-                        {
-                            sprites[sprite][y * 16 + x + pixel] |=
-                                ((b >> (7 - pixel)) & 0x01) << 4;
-                        }
-                    }
-                }
-            }            
-        }
+        wlError("Expected MSQ block of tileset to be compressed");
+        return NULL;
     }
-    return sprites;
-}
 
+    // Calculate the number of tiles
+    quantity = header->size * 2 / 16 / 16;
 
-/**
- * Writes sprites to files. The function returns 1 if write was successfull
- * and 0 if write failed. In this case you can read the reason from errno.
- *
- * @param sprites
- *            The sprites to write
- * @param spritesFilename
- *            The filename of the file to write the sprites to
- * @param masksFilename
- *            The filename of the file to write the sprite masks to
- * @return 1 on success, 0 on failure
- */
+    // Free header structure
+    free(header);
 
-int wlSpritesWriteFile(wlImages sprites, char *spritesFilename,
-        char *masksFilename)
-{
-    FILE *spritesFile, *masksFile;
-    int result;
-    
-    assert(sprites != NULL);
-    assert(spritesFilename != NULL);
-    assert(masksFilename != NULL);
-    spritesFile = fopen(spritesFilename, "wb");
-    if (!spritesFile) return 0;
-    masksFile = fopen(masksFilename, "wb");
-    if (!masksFile)
+    // Initialize huffman stream
+    dataByte = 0;
+    dataMask = 0;
+    if (!(rootNode = wlHuffmanReadNode(stream, &dataByte, &dataMask)))
+        return NULL;
+
+    // Create the images structure which is going to hold the tiles
+    tiles = wlImagesCreate(quantity, 16, 16);
+
+    // Read the tiles
+    for (i = 0; i < quantity; i++)
     {
-        fclose(spritesFile);
-        return 0;
+        tile = tiles->images[i];
+        readTile(stream, tile, rootNode, &dataByte, &dataMask);
     }
-    result = wlSpritesWriteStream(sprites, spritesFile, masksFile);
-    fclose(spritesFile);
-    fclose(masksFile);
-    return result;
-}
 
+    // Free huffman data
+    wlHuffmanFreeNode(rootNode);
 
-/**
- * Writes sprites to streams. The streams must already be open and pointing
- * to the location where you want to write the sprites and the sprite masks to.
- * The streams are not closed by this function so you have to do this yourself.
- * The function returns 1 if write was successfull and 0 if write failed. In
- * this case you can read the reason from errno.
- *
- * @param sprites
- *            The sprites to write
- * @param spritesStream
- *            The stream to write the sprites to
- * @param masksStream
- *            The stream to write the sprite masks to
- * @return 1 on success, 0 on failure
- */
-
-int wlSpritesWriteStream(wlImages sprites, FILE *spritesStream,
-        FILE *masksStream)
-{
-    int x, y, bit, sprite, b;
-    int pixel;
-
-    assert(sprites != NULL);
-    assert(spritesStream != NULL);
-    assert(masksStream != NULL);
-    for (sprite = 0; sprite < 10; sprite++)
-    {
-        for (bit = 0; bit < 4; bit++)
-        {
-            for (y = 0; y < 16; y++)
-            {
-                for (x = 0; x < 16; x += 8)
-                {
-                    b = 0;
-                    for (pixel = 0; pixel < 8; pixel++)
-                    {
-                        b |= ((sprites[sprite][y * 16 +
-                            x + pixel] >> bit) & 0x01) << (7 - pixel);
-                    }
-                    if (fputc(b, spritesStream) == EOF) return 0;
-                    
-                    // Write transparancy information when last bit has been
-                    // written
-                    if (bit == 3)
-                    {
-                        b = 0;
-                        for (pixel = 0; pixel < 8; pixel++)
-                        {
-                            b |= (sprites[sprite][y * 16 + x + pixel] >> 4) <<
-                                (7 - pixel);
-                        }
-                        if (fputc(b, masksStream) == EOF) return 0;
-                    }
-                }
-            }
-        }
-    }
-    return 1;
+    // Return the tiles
+    return tiles;
 }

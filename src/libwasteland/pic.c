@@ -10,13 +10,13 @@
 #include <errno.h>
 #include <string.h>
 #include "wasteland.h"
-    
+
 
 /**
  * Reads image from the specified PIC file and returns them. You have to
  * free the allocated memory for the returned image with the wlImageFree()
  * function when you no longer need it.
- * 
+ *
  * If the specified file could not be read then NULL is returned and you can
  * retrieve the problem source from errno.
  *
@@ -29,7 +29,7 @@ wlImage wlPicReadFile(char *filename)
 {
     FILE *file;
     wlImage image;
-    
+
     assert(filename != NULL);
     file = fopen(filename, "rb");
     if (!file) return NULL;
@@ -44,8 +44,8 @@ wlImage wlPicReadFile(char *filename)
  * already be open and pointing to the PIC data. The stream is not closed by
  * this function so you have to do this yourself. You have to
  * free the allocated memory for the returned image with the wlImageFree()
- * function when you no longer need it. 
- * 
+ * function when you no longer need it.
+ *
  * If an error occurs while reading data from the stream then NULL is returned
  * and you can retrieve the problem source from errno.
  *
@@ -59,7 +59,7 @@ wlImage wlPicReadStream(FILE *stream)
     wlImage image;
     int x, y;
     int b;
-    
+
     image = wlImageCreate(288, 128);
     for (y = 0; y < image->height; y++)
     {
@@ -71,7 +71,7 @@ wlImage wlPicReadStream(FILE *stream)
             image->pixels[y * image->width + x + 1] = b & 0x0f;
         }
     }
-    
+
     wlImageVXorDecode(image);
     return image;
 }
@@ -92,7 +92,7 @@ int wlPicWriteFile(wlImage image, char *filename)
 {
     FILE *file;
     int result;
-    
+
     assert(image != NULL);
     assert(filename != NULL);
     file = fopen(filename, "wb");
@@ -106,7 +106,7 @@ int wlPicWriteFile(wlImage image, char *filename)
 /**
  * Writes the specified image to a file stream. The stream must already be open
  * and pointing to the location where you want to write the pic to. The stream
- * is not closed by this function so you have to do this yourself. The function 
+ * is not closed by this function so you have to do this yourself. The function
  * returns 1 if write was successfull and 0 if write failed.
  *
  * @param image
@@ -121,15 +121,15 @@ int wlPicWriteStream(wlImage image, FILE *stream)
     int x, y;
     int pixel;
     wlImage encodedImage;
-    
+
     assert(image != NULL);
     assert(image->width % 2 == 0);
     assert(stream != NULL);
-    
+
     /* Encode the pixels */
     encodedImage = wlImageClone(image);
     wlImageVXorEncode(encodedImage);
-    
+
     /* Write encoded pixels to stream */
     for (y = 0; y < image->height; y++)
     {
@@ -144,7 +144,7 @@ int wlPicWriteStream(wlImage image, FILE *stream)
             }
         }
     }
-    
+
     /* Release encoded pixels and report success */
     wlImageFree(encodedImage);
     return 1;

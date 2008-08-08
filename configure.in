@@ -29,4 +29,5 @@ AC_OUTPUT(
   src/unpackcpa/Makefile
   src/packcpa/Makefile
   src/decodecpa/Makefile
+  src/unpacktiles/Makefile
 )
