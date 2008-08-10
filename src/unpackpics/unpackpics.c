@@ -185,14 +185,14 @@ static void writeAnimation(char *outputDir, wlPicsAnimation animation)
         die("Unable to write index.html: %s\n", strerror(errno));
     fprintf(htmlFile, "<html>\n");
     fprintf(htmlFile, "  <body>\n");
-    fprintf(htmlFile, "    <div style=\"position:relative\">\n");
+    fprintf(htmlFile, "    <div style=\"position:relative;width:96px;height:84px\">\n");
 
     // Determine the filename format for all written files of this animation
     sprintf(format, "%%0%ii.%%s", (int) log10(animation->instructions->quantity) + 1);
 
     // Write the base frame
     sprintf(filename, format, 0, "png");
-    fprintf(htmlFile, "      <img src=\"%s\" />\n", filename);
+    fprintf(htmlFile, "      <img src=\"%s\" style=\"position:absolute;width:100%%;height:100%%\" />\n", filename);
     baseImage = createImage(animation->baseFrame);
     file = fopen(filename, "wb");
     if (!file)
@@ -220,14 +220,14 @@ static void writeAnimation(char *outputDir, wlPicsAnimation animation)
 
         // Initialize the animated GIF for this animation layer
         sprintf(filename, format, i + 1, "gif");
-        fprintf(htmlFile, "      <img src=\"%s\" style=\"position:absolute;left:0;top:0\" />\n", filename);
+        fprintf(htmlFile, "      <img src=\"%s\" style=\"position:absolute;width:100%%;height:100%%\" />\n", filename);
         file = fopen(filename, "wb");
         if (!file) die("Unable to write animation layer to %s: %s\n",
                 filename, strerror(errno));
         gdImageGifAnimBegin(transpImage, file, 1, 0);
-        gdImageGifAnimAdd(transpImage, file, 0, 0, 0, 0, gdDisposalNone, NULL);
+        gdImageGifAnimAdd(transpImage, file, 0, 0, 0, set->instructions[0]->delay * 6, gdDisposalNone, NULL);
         prevImage = NULL;
-        for (j = 0; j < set->quantity; j++)
+        for (j = 0; j < set->quantity - 1; j++)
         {
             instruction = set->instructions[j];
             if (instruction->update >= animation->updates->quantity)
@@ -237,7 +237,8 @@ static void writeAnimation(char *outputDir, wlPicsAnimation animation)
             }
             wlAnimationApply(frame, animation->updates->sets[instruction->update]);
             frameImage = createImage(frame);
-            gdImageGifAnimAdd(frameImage, file, 0, 0, 0, instruction->delay * 8,
+            gdImageGifAnimAdd(frameImage, file, 0, 0, 0,
+                    set->instructions[j + 1]->delay * 6,
                     gdDisposalNone, prevImage ? prevImage : baseImage);
             if (prevImage) gdImageDestroy(prevImage);
             prevImage = frameImage;
