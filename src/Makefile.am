@@ -11,5 +11,6 @@ SUBDIRS = \
 	unpackcpa \
 	packcpa \
 	decodecpa \
-	unpacktiles
+	unpacktiles \
+	unpackpics
 	

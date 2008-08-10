@@ -75,6 +75,65 @@ typedef struct
     wlCpaFrame ** frames;
 } wlCpaAnimation;
 
+typedef struct
+{
+    unsigned char x;
+    unsigned char y;
+    unsigned char quantity;
+    unsigned char * pixelXORs;
+} wlPicsUpdateStruct;
+typedef wlPicsUpdateStruct * wlPicsUpdate;
+
+typedef struct
+{
+    int quantity;
+    wlPicsUpdate * updates;
+} wlPicsUpdateSetStruct;
+typedef wlPicsUpdateSetStruct * wlPicsUpdateSet;
+
+typedef struct
+{
+    int quantity;
+    wlPicsUpdateSet * sets;
+} wlPicsUpdatesStruct;
+typedef wlPicsUpdatesStruct * wlPicsUpdates;
+
+typedef struct
+{
+    unsigned char delay;
+    unsigned char update;
+} wlPicsInstructionStruct;
+typedef wlPicsInstructionStruct * wlPicsInstruction;
+
+typedef struct
+{
+    int quantity;
+    wlPicsInstruction * instructions;
+} wlPicsInstructionSetStruct;
+typedef wlPicsInstructionSetStruct * wlPicsInstructionSet;
+
+typedef struct
+{
+    int quantity;
+    wlPicsInstructionSet * sets;
+} wlPicsInstructionsStruct;
+typedef wlPicsInstructionsStruct * wlPicsInstructions;
+
+typedef struct
+{
+    wlImage baseFrame;
+    wlPicsInstructions instructions;
+    wlPicsUpdates updates;
+} wlPicsAnimationStruct;
+typedef wlPicsAnimationStruct * wlPicsAnimation;
+
+typedef struct
+{
+    int quantity;
+    wlPicsAnimation * animations;
+} wlPicsAnimationsStruct;
+typedef wlPicsAnimationsStruct * wlPicsAnimations;
+
 enum wlMsqType
 {
     UNCOMPRESSED,
@@ -117,6 +176,9 @@ extern int             wlHuffmanWriteNode(wlHuffmanNode *node, FILE *stream,
 extern void            wlHuffmanFreeNode(wlHuffmanNode *node);
 extern int             wlHuffmanReadByte(FILE *file, wlHuffmanNode *rootNode,
     unsigned char *dataByte, unsigned char *dataMask);
+extern unsigned char * wlHuffmanReadBlock(FILE *stream, unsigned char *block,
+    int size, wlHuffmanNode *rootNode, unsigned char *dataByte,
+    unsigned char *dataMask);
 extern int             wlHuffmanWriteByte(unsigned char byte, FILE *file,
     wlHuffmanNode **nodeIndex, unsigned char *dataByte,
     unsigned char *dataMask);
@@ -186,5 +248,12 @@ extern int              wlCpaWriteStream(wlCpaAnimation *animation,
 
 /* MSQ functions */
 extern wlMsqHeader wlMsqReadHeader(FILE *stream);
+
+/* PICS animation functions */
+extern wlPicsAnimations wlAnimationsReadFile(char *filename);
+extern wlPicsAnimation  wlAnimationReadStream(FILE *stream);
+extern void wlAnimationFree(wlPicsAnimation animations);
+extern void wlAnimationsFree(wlPicsAnimations animations);
+extern void wlAnimationApply(wlImage image, wlPicsUpdateSet set);
 
 #endif

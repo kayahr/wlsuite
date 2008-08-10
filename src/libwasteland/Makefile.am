@@ -14,7 +14,8 @@ libwasteland_la_SOURCES = \
   font.c \
   cpa.c \
   msq.c \
-  tiles.c
+  tiles.c \
+  pics.c
 libwastelandincludedir = $(includedir)
 libwastelandinclude_HEADERS = wasteland.h
 AM_CFLAGS = -Wall -Werror -O2

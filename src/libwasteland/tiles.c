@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+#include "list.h"
 #include "wasteland.h"
 
 
@@ -42,25 +43,13 @@ wlTilesets wlTilesetsReadFile(char *filename)
     if (!file) return NULL;
 
     // Create the tilesets structure
-    tilesets = (wlTilesets) malloc(sizeof(wlTilesetsStruct));
-    tilesets->quantity = 0;
-    tilesets->tilesets = NULL;
+    tilesets = malloc(sizeof(wlTilesetsStruct));
+    listCreate(tilesets->tilesets, &(tilesets->quantity));
 
     // Read the tilesets
     while ((tiles = wlTilesReadStream(file)))
     {
-        if (tilesets->quantity)
-        {
-            tilesets->tilesets = (wlImages *) realloc((tilesets->tilesets),
-                    sizeof(wlImages *) * (tilesets->quantity + 1));
-            tilesets->tilesets[tilesets->quantity] = tiles;
-        }
-        else
-        {
-            tilesets->tilesets = (wlImages * ) malloc(sizeof(wlImages *));
-            tilesets->tilesets[0] = tiles;
-        }
-        tilesets->quantity++;
+        listAdd(tilesets->tilesets, tiles, &tilesets->quantity);
     }
 
     // Close the file stream
@@ -69,6 +58,7 @@ wlTilesets wlTilesetsReadFile(char *filename)
     // Return the tilesets
     return tilesets;
 }
+
 
 /**
  * Releases all the memory allocated for the specified tilesets.
@@ -108,7 +98,7 @@ void wlTilesetsFree(wlTilesets tilesets)
  *            The root node of the huffman tree
  * @param dataByte
  *            Storage for last read byte
- * @param dateMask
+ * @param dataMask
  *            Storage for last bit mask
  * @return The image
  */
