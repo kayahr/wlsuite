@@ -352,6 +352,7 @@ void wlAnimationsFree(wlPicsAnimations animations)
     {
         wlAnimationFree(animations->animations[i]);
     }
+    free(animations->animations);
     free(animations);
 }
 
@@ -365,7 +366,30 @@ void wlAnimationsFree(wlPicsAnimations animations)
 
 void wlAnimationFree(wlPicsAnimation animation)
 {
+    int i, j;
+    wlPicsInstructionSet instructionSet;
+    wlPicsUpdateSet updateSet;
+
     wlImageFree(animation->baseFrame);
+    for (i = 0; i < animation->instructions->quantity; i++)
+    {
+        instructionSet = animation->instructions->sets[i];
+        listFreeWithItems(instructionSet->instructions, &instructionSet->quantity);
+        free(instructionSet);
+    }
+    free(animation->instructions->sets);
+    free(animation->instructions);
+
+    for (i = 0; i < animation->updates->quantity; i++)
+    {
+        updateSet = animation->updates->sets[i];
+        for (j = 0; j < updateSet->quantity; j++)
+            free(updateSet->updates[j]->pixelXORs);
+        listFreeWithItems(updateSet->updates, &updateSet->quantity);
+        free(updateSet);
+    }
+    free(animation->updates->sets);
+    free(animation->updates);
     free(animation);
 }
 

@@ -25,29 +25,20 @@
 wlMsqHeader wlMsqReadHeader(FILE *stream)
 {
     wlMsqHeader header;
-    int b1, b2, b3, b4;
+    unsigned char b[4];
     int size;
 
     // Validate parameters
     assert(stream != NULL);
 
-    // Allocate header
-    header = (wlMsqHeader) malloc(sizeof(wlMsqHeaderStruct));
-
-    // Read the next four bytes and abort if one of them is EOF
-    b1 = fgetc(stream);
-    if (b1 == EOF) return NULL;
-    b2 = fgetc(stream);
-    if (b2 == EOF) return NULL;
-    b3 = fgetc(stream);
-    if (b3 == EOF) return NULL;
-    b4 = fgetc(stream);
-    if (b4 == EOF) return NULL;
+    // Read the next four bytes and abort if EOF was reached
+    if (fread(b, 1, 4, stream) != 4) return NULL;
 
     // Check for uncompressed MSQ block type
-    if (b1 == 'm' && b2 == 's' && b3 == 'q' && (b4 == '0' || b4 == '1'))
+    if (b[0] == 'm' && b[1] == 's' && b[2] == 'q' && (b[3] == '0' || b[3] == '1'))
     {
-        header->disk = b4 - '0';
+        header = malloc(sizeof(wlMsqHeaderStruct));
+        header->disk = b[3] - '0';
         header->size = 0;
         header->type = UNCOMPRESSED;
         return header;
@@ -55,35 +46,30 @@ wlMsqHeader wlMsqReadHeader(FILE *stream)
 
     // Assume the first four bytes are size information and read the next
     // four bytes
-    size = b1 | (b2 << 8) | (b3 << 16) | (b4 << 24);
-    b1 = fgetc(stream);
-    if (b1 == EOF) return NULL;
-    b2 = fgetc(stream);
-    if (b2 == EOF) return NULL;
-    b3 = fgetc(stream);
-    if (b3 == EOF) return NULL;
-    b4 = fgetc(stream);
-    if (b4 == EOF) return NULL;
+    size = b[0] | (b[1] << 8) | (b[2] << 16) | (b[3] << 24);
+    if (fread(b, 1, 4, stream) != 4) return NULL;
 
     // Check for compressed MSQ block type
-    if (b1 == 'm' && b2 == 's' && b3 == 'q' && (b4 == 0 || b4 == 1))
+    if (b[0] == 'm' && b[1] == 's' && b[2] == 'q' && (b[3] == 0 || b[3] == 1))
     {
-        header->disk = b4;
+        header = malloc(sizeof(wlMsqHeaderStruct));
+        header->disk = b[3];
         header->size = size;
         header->type = COMPRESSED;
         return header;
     }
 
     // Check for CPA animation MSQ block type
-    if (b1 == 0x08 && b2 == 0x67 && b3 == 0x01 && b4 == 0)
+    if (b[0] == 0x08 && b[1] == 0x67 && b[2] == 0x01 && b[3] == 0)
     {
-        header->disk = b4;
+        header = malloc(sizeof(wlMsqHeaderStruct));
+        header->disk = b[3];
         header->size = size;
         header->type = CPA_ANIMATION;
         return header;
     }
 
     // Give up, unknown MSQ block type
-    wlError("Unknown MSQ block type: %i, %i, %i, %i", b1, b2, b3, b4);
+    wlError("Unknown MSQ block type: %i, %i, %i, %i", b[0], b[1], b[2], b[3]);
     return NULL;
 }
