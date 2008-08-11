@@ -213,11 +213,15 @@ static wlPicsUpdates readUpdates(FILE *stream,
         // block so store the last update block if there was one
         if (data[i] == 0xff && data[i + 1] == 0xff)
         {
-            if (set)
+            // There is one special update block in allpics2 picture 22 which
+            // is empty. So we have to create an empty update block here.
+            if (!set)
             {
-                listAdd(updates->sets, set, &updates->quantity);
-                set = NULL;
+                set = malloc(sizeof(wlPicsUpdateSetStruct));
+                listCreate(set->updates, &set->quantity);
             }
+            listAdd(updates->sets, set, &updates->quantity);
+            set = NULL;
             i += 2;
             continue;
         }

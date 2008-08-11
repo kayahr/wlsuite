@@ -230,11 +230,12 @@ static void writeAnimation(char *outputDir, wlPicsAnimation animation)
         for (j = 0; j < set->quantity - 1; j++)
         {
             instruction = set->instructions[j];
-            if (instruction->update >= animation->updates->quantity)
-            {
-                printf("Warning! %i >= %i\n", instruction->update, animation->updates->quantity);
+
+            // There is one empty update frame in allpics2 picture 22. We
+            // simply ignore it
+            if (animation->updates->sets[instruction->update]->quantity == 0)
                 continue;
-            }
+
             wlAnimationApply(frame, animation->updates->sets[instruction->update]);
             frameImage = createImage(frame);
             gdImageGifAnimAdd(frameImage, file, 0, 0, 0,
