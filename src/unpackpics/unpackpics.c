@@ -263,7 +263,12 @@ static void writeAnimation(char *outputDir, wlPicsAnimation animation)
     gdImageDestroy(transpImage);
 
     // Switch back to old current directory
-    chdir(oldDir);
+    if (chdir(oldDir))
+    {
+        die("Unable to change to directory %s: %s\n", oldDir,
+                strerror(errno));
+        return;
+    }
     free(oldDir);
 }
 
@@ -282,7 +287,7 @@ static void writeAnimations(char *outputDir, wlPicsAnimations animations)
     int i;
     char *oldDir;
     char filename[5];
-    char format[4];
+    char format[5];
 
     oldDir = getcwd(NULL, 0);
     if (chdir(outputDir))
@@ -291,6 +296,7 @@ static void writeAnimations(char *outputDir, wlPicsAnimations animations)
                 strerror(errno));
         return;
     }
+    
     sprintf(format, "%%0%ii", (int) log10(animations->quantity) + 1);
     for (i = 0; i < animations->quantity; i++)
     {
@@ -298,7 +304,12 @@ static void writeAnimations(char *outputDir, wlPicsAnimations animations)
         mkdir(filename, 0755);
         writeAnimation(filename, animations->animations[i]);
     }
-    chdir(oldDir);
+    if (chdir(oldDir))
+    {
+        die("Unable to change to directory %s: %s\n", oldDir,
+                strerror(errno));
+        return;
+    }
     free(oldDir);
 }
 

@@ -14,8 +14,8 @@
 #include <errno.h>
 #include <dirent.h>
 #include <wasteland.h>
-#include <strutils/str.h>
-#include <strutils/strlist.h>
+#include <kaytils/str.h>
+#include <kaytils/list.h>
 #include "config.h"
 
 
@@ -209,17 +209,16 @@ static wlCpaAnimation *readAnimation(char *inputDir)
     }
     
     // Build list of PNG files found in directory
-    filenames = strListCreate();
+    listCreate(filenames, &quantity);
     dir = opendir(inputDir);
     while ((entry = readdir(dir)))
     {
         if (strEndsWithIgnoreCase(entry->d_name, ".png"))
         {
-            strListAdd(&filenames, strdup(entry->d_name));
+            listAdd(filenames, strdup(entry->d_name), &quantity);
         }
     }
     closedir(dir);
-    quantity = strListSize(filenames);
     qsort(filenames, quantity, sizeof(char *), sortFilenames);
     
     delays = fopen("delays.txt", "rt");
@@ -228,17 +227,21 @@ static wlCpaAnimation *readAnimation(char *inputDir)
     // Build the animation container
     animation = wlCpaCreate(288, 128);
     baseFrame = readImage(filenames[0]);
-    lastFrame = readImage(filenames[strListSize(filenames) - 1]);
+    lastFrame = readImage(filenames[quantity - 1]);
     memcpy(animation->baseFrame, baseFrame, 288 * 128 * sizeof(wlPixel));
-    for (i = 1; i < strListSize(filenames); i++)
+    for (i = 1; i < quantity; i++)
     {
         // Read delay from delay.txt
         while (1)
         {
-            fgets(buffer, sizeof(buffer), delays);
+            if (!fgets(buffer, sizeof(buffer), delays))
+            {
+                die("Unable to read data from delay.txt: ", strerror(errno));
+                return NULL;
+            }
             line = strCreate();
-            strCopy(&line, buffer);
-            strTrim(&line);
+            strCopy(line, buffer);
+            strTrim(line);
             if (strLength(line) == 0 || strStartsWith(line, "#"))
             {
                 strFree(line);
@@ -249,7 +252,7 @@ static wlCpaAnimation *readAnimation(char *inputDir)
             break;
         }        
         
-        frame = i == strListSize(filenames) - 1 ? lastFrame 
+        frame = i == quantity - 1 ? lastFrame 
                 : readImage(filenames[i]);
         wlCpaAddFrame(animation, frame, baseFrame, i == 11 ? lastFrame : NULL,
                 delay);
@@ -257,11 +260,16 @@ static wlCpaAnimation *readAnimation(char *inputDir)
         baseFrame = frame;
     }
     free(baseFrame);
-    strListFreeWithItems(filenames);
+    listFreeWithItems(filenames, &quantity);
     fclose(delays);
     
     // Go back to previous directory and then return the animation
-    chdir(oldDir);
+    if (chdir(oldDir))
+    {
+        die("Unable to change to directory %s: %s\n", oldDir,
+                strerror(errno));
+        return NULL;
+    }
     free(oldDir);
     return animation;
 }

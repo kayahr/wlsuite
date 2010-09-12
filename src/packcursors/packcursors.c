@@ -14,8 +14,8 @@
 #include <errno.h>
 #include <dirent.h>
 #include <wasteland.h>
-#include <strutils/str.h>
-#include <strutils/strlist.h>
+#include <kaytils/str.h>
+#include <kaytils/list.h>
 #include "config.h"
 
 #ifdef WIN32
@@ -189,7 +189,7 @@ static wlImages readCursors(char *inputDir)
     DIR *dir;
     struct dirent *entry;
     char **filenames;
-    int quantity;
+    size_t quantity;
     wlImages cursors;
     int i;
     gdImagePtr image;
@@ -205,17 +205,16 @@ static wlImages readCursors(char *inputDir)
     }
     
     // Build list of PNG files found in directory
-    filenames = strListCreate();
+    listCreate(filenames, &quantity);
     dir = opendir(inputDir);
     while ((entry = readdir(dir)))
     {
         if (strEndsWithIgnoreCase(entry->d_name, ".png"))
         {
-            strListAdd(&filenames, strdup(entry->d_name));
+            listAdd(filenames, strdup(entry->d_name), &quantity);
         }
     }
     closedir(dir);
-    quantity = strListSize(filenames);
     qsort(filenames, quantity, sizeof(char *), sortFilenames);
     
     // Build the cursors container
@@ -236,10 +235,15 @@ static wlImages readCursors(char *inputDir)
             gdImageDestroy(image);
         }
     }
-    strListFreeWithItems(filenames);
+    listFreeWithItems(filenames, &quantity);
     
     // Go back to previous directory and then return the cursors
-    chdir(oldDir);
+    if (chdir(oldDir))
+    {
+        die("Unable to change to directory %s: %s\n", oldDir,
+                strerror(errno));
+        return NULL;
+    }
     free(oldDir);
     return cursors;
 }

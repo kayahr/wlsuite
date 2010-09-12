@@ -201,7 +201,12 @@ static void writePngs(char *outputDir, wlCpaAnimation *animation)
     fclose(delays);
         
     // Go back to old directorry
-    chdir(oldDir);
+    if (chdir(oldDir))
+    {
+        die("Unable to change to directory %s: %s\n", oldDir,
+                strerror(errno));
+        return;
+    }    
     
     // Free resources
     free(frame);

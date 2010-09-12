@@ -189,7 +189,12 @@ static void writePngs(char *outputDir, wlImages font)
         sprintf(filename, "%03i.png", i);
         writePng(filename, font, i); 
     }
-    chdir(oldDir);
+    if (chdir(oldDir))
+    {
+        die("Unable to change to directory %s: %s\n", oldDir,
+                strerror(errno));
+        return;
+    }
     free(oldDir);
 }
 

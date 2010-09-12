@@ -191,7 +191,12 @@ static void writePngs(char *outputDir, wlImages tiles)
         sprintf(filename, format, i);
         writePng(filename, tiles, i);
     }
-    chdir(oldDir);
+    if (chdir(oldDir))
+    {
+        die("Unable to change to directory %s: %s\n", oldDir,
+                strerror(errno));
+        return;
+    }
     free(oldDir);
 }
 
@@ -228,7 +233,12 @@ static void writeTilesets(char *outputDir, wlTilesets tilesets)
         mkdir(filename, 0755);
         writePngs(filename, tilesets->tilesets[i]);
     }
-    chdir(oldDir);
+    if (chdir(oldDir))
+    {
+        die("Unable to change to directory %s: %s\n", oldDir,
+                strerror(errno));
+        return;
+    }
     free(oldDir);
 }
 

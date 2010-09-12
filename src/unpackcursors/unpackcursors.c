@@ -188,7 +188,12 @@ static void writePngs(char *outputDir, wlImages cursors)
         sprintf(filename, "%i.png", i);
         writePng(filename, cursors, i); 
     }
-    chdir(oldDir);
+    if (chdir(oldDir))
+    {
+        die("Unable to change to directory %s: %s\n", outputDir,
+                strerror(errno));
+        return;
+    }
     free(oldDir);
 }
 
