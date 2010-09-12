@@ -19,6 +19,8 @@ AC_DEFINE(COPYRIGHT,"Copyright (C) 2010  Klaus Reimer <k@ailis.de>",Copyright me
 AC_CONFIG_FILES(
   Makefile 
   src/Makefile
+  src/decodehuffman/Makefile
+  src/encodehuffman/Makefile
   src/decodepic/Makefile
   src/encodepic/Makefile
   src/unpacksprites/Makefile

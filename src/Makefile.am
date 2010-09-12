@@ -1,4 +1,6 @@
 SUBDIRS = \
+	decodehuffman \
+	encodehuffman \
 	decodepic \
 	encodepic \
 	unpacksprites \
