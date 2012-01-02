@@ -13,7 +13,7 @@
 #include <gd.h>
 #include <errno.h>
 #include <dirent.h>
-#include <wasteland.h>
+#include "../libwasteland/wasteland.h"
 #include <kaytils/str.h>
 #include <kaytils/list.h>
 #include "config.h"

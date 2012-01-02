@@ -14,7 +14,7 @@
 #include <string.h>
 #include <gd.h>
 #include <errno.h>
-#include <wasteland.h>
+#include "../libwasteland/wasteland.h"
 #include "config.h"
 
 #ifdef WIN32
@@ -125,13 +125,12 @@ static void writePng(char *filename, wlImage image)
 {    
     gdImagePtr output;
     int x, y, i;
-    int palette[17];
     FILE *file;
 
     output = gdImageCreate(288, 128);
     for (i = 0; i < 16; i++)
     {
-        palette[i] = gdImageColorAllocate(output, wlPalette[i].red,
+        gdImageColorAllocate(output, wlPalette[i].red,
                 wlPalette[i].green, wlPalette[i].blue);
     }
     for (y = 0; y < 128; y++)       

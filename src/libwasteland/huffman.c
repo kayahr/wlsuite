@@ -362,7 +362,7 @@ void wlHuffmanDumpNode(wlHuffmanNode *node, int indent)
     }
     else
     {
-        printf(spaces);
+        printf("%s", spaces);
         if (node->keyBits <= 0 || node->keyBits > 16)
         {
             printf("Invalid keybits on payload node!!!!");

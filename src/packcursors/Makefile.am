@@ -1,5 +1,5 @@
 bin_PROGRAMS = wl_packcursors
-wl_packcursors_LDADD = -lwasteland
+wl_packcursors_LDADD = ../libwasteland/libwasteland.la
 wl_packcursors_SOURCES = \
 	packcursors.c
 

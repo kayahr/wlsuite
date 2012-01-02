@@ -14,7 +14,7 @@
 #include <string.h>
 #include <gd.h>
 #include <errno.h>
-#include <wasteland.h>
+#include "../libwasteland/wasteland.h"
 #include "config.h"
 
 #ifdef WIN32

@@ -1,5 +1,5 @@
 bin_PROGRAMS = wl_decodepic
-wl_decodepic_LDADD = -lwasteland
+wl_decodepic_LDADD = ../libwasteland/libwasteland.la
 wl_decodepic_SOURCES = \
 	decodepic.c
 

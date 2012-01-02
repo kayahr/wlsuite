@@ -12,7 +12,7 @@
 #include <string.h>
 #include <gd.h>
 #include <errno.h>
-#include <wasteland.h>
+#include "../libwasteland/wasteland.h"
 #include "config.h"
 
 /** The maximum number of bytes to read. 0 = Infinite */

@@ -1,6 +1,6 @@
 all:
-	autoreconf --install --force
+	mkdir -p m4
+	autoreconf --install --force -I m4
 	
 clean:
-	hg status -in | xargs -r rm -rf
-	find -type d -empty -print | xargs -r rmdir
+	rm -rf $$(cat .gitignore)

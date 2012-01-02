@@ -1,5 +1,5 @@
 bin_PROGRAMS = wl_unpackpics
-wl_unpackpics_LDADD = -lwasteland
+wl_unpackpics_LDADD = ../libwasteland/libwasteland.la
 wl_unpackpics_SOURCES = \
 	unpackpics.c
 

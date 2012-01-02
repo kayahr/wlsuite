@@ -1,5 +1,5 @@
 bin_PROGRAMS = wl_unpackcpa
-wl_unpackcpa_LDADD = -lwasteland
+wl_unpackcpa_LDADD = ../libwasteland/libwasteland.la
 wl_unpackcpa_SOURCES = \
 	unpackcpa.c
 

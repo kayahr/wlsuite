@@ -1,5 +1,5 @@
 bin_PROGRAMS = wl_unpacktiles
-wl_unpacktiles_LDADD = -lwasteland
+wl_unpacktiles_LDADD = ../libwasteland/libwasteland.la
 wl_unpacktiles_SOURCES = \
 	unpacktiles.c
 

@@ -1,4 +1,5 @@
 SUBDIRS = \
+        libwasteland \
 	decodehuffman \
 	encodehuffman \
 	decodepic \
@@ -14,4 +15,4 @@ SUBDIRS = \
 	decodecpa \
 	unpacktiles \
 	unpackpics
-	
+

@@ -13,7 +13,7 @@
 #include <gd.h>
 #include <errno.h>
 #include <dirent.h>
-#include <wasteland.h>
+#include "../libwasteland/wasteland.h"
 #include <kaytils/str.h>
 #include <kaytils/list.h>
 #include "config.h"
@@ -132,13 +132,13 @@ static void storeSprite(wlImages sprites, int index, gdImagePtr image)
 {
     gdImagePtr output;
     int x, y, i;
-    int palette[16], transparency;
+    int transparency;
     
     /* Create a temporary second image for palette conversion */
     output = gdImageCreate(16, 16);
     for (i = 0; i < 16; i++)
     {
-        palette[i] = gdImageColorAllocate(output, wlPalette[i].red,
+        gdImageColorAllocate(output, wlPalette[i].red,
                 wlPalette[i].green, wlPalette[i].blue);
     }
     transparency = gdImageColorAllocate(output, 0, 0, 0);

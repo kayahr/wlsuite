@@ -11,7 +11,7 @@
 #include <string.h>
 #include <gd.h>
 #include <errno.h>
-#include <wasteland.h>
+#include "../libwasteland/wasteland.h"
 #include "config.h"
 
 
@@ -115,14 +115,13 @@ static void writePic(char *filename, gdImagePtr image)
 {
     gdImagePtr output;
     int x, y, i;
-    int palette[16];
     wlImage pic;
     
     /* Create a temporary second image for palette conversion */
     output = gdImageCreate(288, 128);
     for (i = 0; i < 16; i++)
     {
-        palette[i] = gdImageColorAllocate(output, wlPalette[i].red,
+        gdImageColorAllocate(output, wlPalette[i].red,
                 wlPalette[i].green, wlPalette[i].blue);
     }
     for (i = 16; i < 256; i++) gdImageColorAllocate(output, 0, 0, 0);
