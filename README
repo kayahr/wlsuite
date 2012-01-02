@@ -5,11 +5,41 @@ Up to now it implements the following functionality:
 
   Shared library (libwasteland):
     
+    * Bit-wise reading/writing of files
     * Encoding/Decoding data with vertical xor scheme
-    * Reading/Writing pic from/to file and stream
-    * Reading/Writing wlf from/to file and stream
-    
+    * Reading/Writing huffman encoded data
+    * Reading/Writing title picture (TITLE.PIC)
+    * Reading/Writing sprites (IC0_9.WLF/MASKS.WLF)
+    * Reading/Writing tilesets (ALLHTDS1/ALLHTDS2)
+    * Reading/Writing mouse cursors (CURS)
+    * Reading/Writing fonts (COLORF.FNT)
+    * Reading/Writing end animation (END.CPA)
+    * Reading encounter animations (ALLPICS1 and ALLPICS2)
+
   Tools:
   
-    * decodepic (Converts a PIC into a PNG)
-    * encodepic (Converts a PNG into a PIC)
+    * wl_decodecpa: Decodes CPA animation file into an animated GIF image
+    * wl_decodehuffman: Huffman-decodes data from STDIN and writes it to STDOUT
+    * wl_decodepic: Converts a wasteland PIC image file into a PNG image file
+    * wl_encodehuffman: Huffman-encodes data from STDIN and writes it to STDOUT
+    * wl_encodepic: Converts a PNG image file into a PIC image file
+    * wl_packcpa: Packs PNG files into CPA animation
+    * wl_packcursors: Packs PNG files into cursors
+    * wl_packfont: Packs PNG files into font
+    * wl_packsprites: Packs PNG files into sprites
+    * wl_unpackcpa: Unpacks CPA animation file into PNG images
+    * wl_unpackcursors: Unpacks cursors into PNG images
+    * wl_unpackfont: Unpacks font into PNG images
+    * wl_unpackpics: Unpacks animated pictures into PNG images
+    * wl_unpacksprites: Unpacks sprites into PNG images
+    * wl_unpacktiles: Unpacks the tiles into PNG images
+    
+Currently missing is support for decoding the files GAME1 and GAME2 and
+totally unsupported is the file TRANSTBL (because up to now nobody knows
+what this file does)
+
+Write support for encounter animations, map tiles and game files is
+technically possible but currently not supported because it makes no sense.
+These files are compressed and changing the files most likely results in
+smaller or larger files which can then not be used with the game without
+modifying the EXE file, too.
