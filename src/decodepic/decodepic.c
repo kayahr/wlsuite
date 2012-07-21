@@ -98,6 +98,7 @@ static void check_options(int argc, char *argv[])
             default:
                 die("Unknown option: %s\nUse --help to show valid options.\n",
                         argv[optind - 1]);
+                break;
         }
     }
 }
