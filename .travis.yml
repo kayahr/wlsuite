@@ -1,0 +1,7 @@
+language: c
+
+script: 
+  - make -f Makefile.scm
+  - ./configure
+  - make clean check
+  
