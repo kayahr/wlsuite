@@ -14,8 +14,8 @@
 #include <errno.h>
 #include <dirent.h>
 #include "../libwasteland/wasteland.h"
-#include <kaytils/str.h>
-#include <kaytils/list.h>
+#include "../common/str.h"
+#include "../common/list.h"
 #include "config.h"
 
 

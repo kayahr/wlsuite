@@ -1,5 +1,5 @@
 lib_LTLIBRARIES = libwasteland.la
-libwasteland_la_LIBADD =
+libwasteland_la_LIBADD = ../common/libcommon.la
 libwasteland_la_LDFLAGS = -version-info 0:0:0 -no-undefined
 libwasteland_la_SOURCES = \
   common.c \

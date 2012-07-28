@@ -1,4 +1,5 @@
 SUBDIRS = \
+        common \
         libwasteland \
 	decodehuffman \
 	encodehuffman \

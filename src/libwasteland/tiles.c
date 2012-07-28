@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
-#include "list.h"
+#include "../common/list.h"
 #include "wasteland.h"
 
 
