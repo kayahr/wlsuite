@@ -1,7 +1,9 @@
 language: c
 
+before_script: 
+  - sudo aptitude -y -q install libgd2-xpm-dev
+
 script: 
   - make -f Makefile.scm
   - ./configure
   - make clean check
-  
