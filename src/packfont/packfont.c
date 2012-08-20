@@ -148,14 +148,14 @@ static void storeFontGlyph(wlImages font, int index, gdImagePtr image)
     gdImageFilledRectangle(output, 0, 0, 8, 8, transparency);
     gdImageCopyResampled(output, image, 0, 0, 0, 0, 8, 8, gdImageSX(image),
             gdImageSY(image));
-    
+
     /* Copy pixels from image to pic */
     for (y = 0; y < 8; y++)       
     {
         for (x = 0; x < 8; x++)
         {
-            color = gdImageGetPixel(output, x, y);
-            font->images[index]->pixels[y * 8 + x] = color < 16 ? color : color | 0xf0;
+           color = gdImageGetPixel(output, x, y);
+           font->images[index]->pixels[y * 8 + x] = color < 16 ? color : color | 0xf0;
         }
     }
     
@@ -219,7 +219,7 @@ static wlImages readFont(char *inputDir)
     qsort(filenames, quantity, sizeof(char *), sortFilenames);
     
     // Build the font
-    font = (wlImages) malloc(172 * sizeof(wlImage));
+    font = wlImagesCreate(172, 8, 8);
     for (i = 0; i < 172; i++)
     {
         if (i < quantity)

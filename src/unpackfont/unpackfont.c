@@ -176,7 +176,7 @@ static void writePngs(char *outputDir, wlImages font)
 {
     int i;
     char *oldDir;
-    char filename[6];
+    char filename[8];
     
     oldDir = getcwd(NULL, 0);
     if (chdir(outputDir))
