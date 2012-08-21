@@ -218,7 +218,7 @@ static void writeTilesets(char *outputDir, wlTilesets tilesets)
     int i;
     char *oldDir;
     char filename[5];
-    char format[4];
+    char format[5];
 
     oldDir = getcwd(NULL, 0);
     if (chdir(outputDir))
